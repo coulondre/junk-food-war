@@ -70,7 +70,30 @@ var game = {
         game.offsetLeft = 0;
 		game.ended = false;
 		game.animationFrame = window.requestAnimationFrame(game.animate,game.canvas);
-    },	
+    },
+
+    handlePanning:function() {
+    	game.offsetLeft++;
+    },
+
+    animate:function() {
+    	// Animate the background
+    	game.handlePanning();
+
+    	// Animate the characters
+    	// TODO
+
+    	// Draw the background with parallax scrolling
+    	game.context.drawImage(game.currentLevel.backgroundImage, game.offsetLeft/4, 0, 640, 480, 0, 0, 640, 480);
+    	game.context.drawImage(game.currentLevel.foregroundImage, game.offsetLeft, 0, 640, 480, 0, 0, 640, 480);
+    	game.context.drawImage(game.slingshotImage, game.slingshotX - game.offsetLeft, game.slingshotY);
+    	game.context.drawImage(game.slingshotFrontImage, game.slingshotX - game.offsetLeft, game.slingshotY);
+
+    	if (!game.ended) {
+    		game.animationFrame = window.requestAnimationFrame(game.animate, game.canvas);
+    	}
+    }
+
 }
 
 var levels = {
@@ -158,7 +181,7 @@ var loader = {
 	},
 
 	loadImage:function(url) {
-		this.loadedCount ++;
+		this.totalCount ++;
 		this.loaded = false;
 		$("#loadingscreen").show();
 		var image = new Image();
@@ -168,7 +191,7 @@ var loader = {
 	},
 
 	loadSound:function(url) {
-		this.loadedCount ++;
+		this.totalCount ++;
 		this.loaded = false;
 		$("loadingscreen").show();
 		var audio = new Audio();
