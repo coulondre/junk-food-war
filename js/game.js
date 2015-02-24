@@ -25,10 +25,20 @@
 }());
 
 $(window).load(function() {
-	game.init();
+	game.jsonLoad();
 });
 
 var game = {
+	jsonLoad:function() {
+		// Load JSON file representing the game
+		var gameJsonURL = "http://localhost/junk-food-war/game.json";
+		$.getJSON(gameJsonURL, function(data) {
+			game.gameJSON = data.response;
+			game.init();
+		}).error(function(e) {
+		    console.log(e);      
+		});
+	},
 	// Start initializing objects, preloading assets and display start screen
 	init:function() {
 		// Initialize objects
@@ -97,26 +107,12 @@ var game = {
 }
 
 var levels = {
-	// Level data
-	data: [
-		{ // First Level
-			foreground: 'desert-foreground',
-			background: 'clouds-background',
-			entities: []
-		},
-		{ // Second Level
-			foreground: 'desert-foreground',
-			background: 'clouds-background',
-			entities: []
-		},
-	],
-
 	// Initialize level selection screen
 	init:function() {
 		var html = "";
-		var levelLength = levels.data.length;
+		var levelLength = game.gameJSON.levels.length;
 		for (var i=0; i < levelLength; i++) {
-			var level = levels.data[i];
+			var level = game.gameJSON.levels[i];
 			html += '<input type="button" value="'+ (i+1) + '" > '; 
 		};
 		$("#levelselectscreen").html(html);
@@ -137,13 +133,17 @@ var levels = {
 		};
 		game.score = 0;
 		$("score").html("Score: " + game.score);
-		var level = levels.data[number];
+		var level = game.gameJSON.levels[number];
+		console.log(level.background);
+		console.log(level.foreground);
+		console.log(game.gameJSON.slingshotImage);
+		console.log(game.gameJSON.slingshotFrontImage);
 
 		// Load the background, foreground and slingshot images
-		game.currentLevel.backgroundImage = loader.loadImage("images/backgrounds/" + level.background + ".png");
-		game.currentLevel.foregroundImage = loader.loadImage("images/backgrounds/" + level.foreground + ".png");
-		game.slingshotImage = loader.loadImage("images/slingshot.png");
-		game.slingshotFrontImage = loader.loadImage("images/slingshot-front.png");
+		game.currentLevel.backgroundImage = loader.loadImage(level.background);
+		game.currentLevel.foregroundImage = loader.loadImage(level.foreground);
+		game.slingshotImage = loader.loadImage(game.gameJSON.slingshotImage);
+		game.slingshotFrontImage = loader.loadImage(game.gameJSON.slingshotFrontImage);
 
 		// Call game.start() once the assets have loaded
 		if (loader.loaded) {
