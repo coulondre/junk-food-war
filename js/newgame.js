@@ -118,13 +118,6 @@ $(window).load(function() {
         this.foregroundImage = this.loader.loadImage(this.assets.foreground);
         this.slingshotImage = this.loader.loadImage(this.assets.slingshotImage);
         this.slingshotFrontImage = this.loader.loadImage(this.assets.slingshotFrontImage);
-
-        // Call level.start() once the assets have loaded
-        if (this.loader.loaded) {
-            this.start();
-        } else {
-            this.loader.onload = this.start.bind(this);
-        }
     };
 
     Level.prototype.start = function() {
@@ -197,7 +190,7 @@ $(window).load(function() {
     Loader.prototype.countAssets = function() {
         var nbAssets = Object.keys(this.level.assets).length; // Warning this is not compatible w/ IE < IE9+
         this.totalCount = nbAssets;
-    }
+    };
 
     Loader.prototype.loadImage = function(url) {
         this.loaded = false;
@@ -225,15 +218,38 @@ $(window).load(function() {
             this.loaded = true;
             // Hide Loading screen
             $("loadingscreen").hide();
-            // and call the loader .onload method if it exists
-            if(this.onload) {
-                this.onload();
-                this.onload = undefined;
-            }
+            // and call the level start method
+            this.level.start();
         }
     };
 
-    //Game initialization
+    // Mouse Class
+    var Mouse = function() {
+        this.x = 0;
+        this.y = 0;
+        this.down = false;
+    };
+
+    Mouse.prototype.init = function () {
+        $('#gamecanvas').mousemove(mouse.mousemovehandler);
+        $('#gamecanvas').mousedown(mouse.mousedownhandler);
+        $('#gamecanvas').mouseup(mouse.mouseuphandler);
+        $('#gamecanvas').mouseout(mouse.mouseuphandler);
+    };
+
+    Mouse.prototype.mousemovehandler = function(ev) {
+
+    };
+
+    Mouse.prototype.mousedownhandler = function(ev) {
+
+    };
+
+    Mouse.prototype.mouseuphandler = function(ev) {
+
+    };
+
+    //Main
     var game = new Game();
     game.jsonLoad(jsonURL);
 });
