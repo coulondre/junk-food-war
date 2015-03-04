@@ -78,7 +78,7 @@ $(window).load(function() {
         var self = this;
         $("#levelselectscreen input").on("click", function() {
             self.currentLevel = new Level(this.value-1, self);
-            self.currentLevel.load();
+            self.currentLevel.init();
             $("#levelselectscreen").hide();
         });
     };
@@ -106,13 +106,19 @@ $(window).load(function() {
         this.slingshotImage; // will be initialize in load method
         this.slingshotFrontImage; // will be initialize in load method
         this.loader; // loader object that will load all the assets
+        this.mouse;
+    };
+
+    Level.prototype.init = function() {
+        this.loader = new Loader(this);
+        this.loader.init();
+        this.mouse = new Mouse();
+        this.mouse.init();
+        this.load();
     };
 
     Level.prototype.load = function() {
         $("score").html("Score: " + this.score);
-        this.loader = new Loader(this);
-        this.loader.init();
-
         // Load the level assets (i.e: background, foreground and slingshot images)
         this.backgroundImage = this.loader.loadImage(this.assets.background);
         this.foregroundImage = this.loader.loadImage(this.assets.foreground);
@@ -228,25 +234,39 @@ $(window).load(function() {
         this.x = 0;
         this.y = 0;
         this.down = false;
+        this.dragging = false;
+        this.downX;
+        this.downY;
     };
 
     Mouse.prototype.init = function () {
-        $('#gamecanvas').mousemove(mouse.mousemovehandler);
-        $('#gamecanvas').mousedown(mouse.mousedownhandler);
-        $('#gamecanvas').mouseup(mouse.mouseuphandler);
-        $('#gamecanvas').mouseout(mouse.mouseuphandler);
+        // Set event handler for when the mouse is moved, is pressed and released and when the mouse leave the canvas area
+        $("#gamecanvas").mousemove(this.mousemovehandler);
+        $("#gamecanvas").mousedown(this.mousedownhandler);
+        $("#gamecanvas").mouseup(this.mouseuphandler);
+        $("#gamecanvas").mouseout(this.mouseuphandler);
     };
 
     Mouse.prototype.mousemovehandler = function(ev) {
+        var offset = $("#gamecanvas").offset();
+        this.x = ev.pageX - offset.left;
+        this.y = ev.pageY - offset.top;
 
+        if(this.down) {
+            this.dragging = true;
+        }
     };
 
     Mouse.prototype.mousedownhandler = function(ev) {
-
+        this.down = true;
+        this.downX = this.x;
+        this.downY = this.y;
+        ev.originalEvent.preventDefault();
     };
 
     Mouse.prototype.mouseuphandler = function(ev) {
-
+        this.down = false;
+        this.dragging = false;
     };
 
     //Main
