@@ -1,12 +1,14 @@
 {"response": {
-		"slingshotImage": "images/slingshot.png",
-		"slingshotFrontImage": "images/slingshot-front.png",
 		"levels": [
 			{
+			"slingshotImage": "images/slingshot.png",
+			"slingshotFrontImage": "images/slingshot-front.png",
 			"foreground": "images/backgrounds/desert-foreground.png",
 			"background": "images/backgrounds/clouds-background.png"
 			},
 			{
+			"slingshotImage": "images/slingshot.png",
+			"slingshotFrontImage": "images/slingshot-front.png",
 			"foreground": "images/backgrounds/desert-foreground.png",
 			"background": "images/backgrounds/clouds-background.png"
 					}

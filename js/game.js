@@ -1,4 +1,4 @@
-// Setup requestAnimationFrame and cancelAnimationFrame for use in the game code
+	// Setup requestAnimationFrame and cancelAnimationFrame for use in the game code
 (function() {
     var lastTime = 0;
     var vendors = ['ms', 'moz', 'webkit', 'o'];
@@ -181,6 +181,7 @@ var loader = {
 	},
 
 	loadImage:function(url) {
+		console.log(this);
 		this.totalCount ++;
 		this.loaded = false;
 		$("#loadingscreen").show();

@@ -33,16 +33,9 @@ $(window).load(function() {
         this.gameJSON;
         this.canvas = $("#gamecanvas")[0];
         this.context = this.canvas.getContext('2d');
-        this.mode = "intro";
-        this.slingshotX = 140;
-        this.slingshotY = 280;
-        this.offsetLeft = 0;
-        this.ended = false;
-        this.score = 0;
-        this.animationFrame; //will be initialize in start() method
         this.levels = [];
         this.currentLevel = {};
-        this.loader = new Loader();
+        this.loader;
 
     };
 
@@ -58,10 +51,8 @@ $(window).load(function() {
     };
 
     Game.prototype.init = function() {
-        // Initialize Levels and loader
-        this.levelsInit();
-        this.loader = new Loader();
-        this.loader.init();
+        // Initialize Levels
+        this.initLevels();
 
         // Hide all game layers and display the start screen
         $(".gamelayer").hide();
@@ -74,10 +65,10 @@ $(window).load(function() {
         });
     };
 
-    Game.prototype.levelsInit = function() {
+    Game.prototype.initLevels = function() {
         var html = "";
-        var levelLength = this.gameJSON.levels.length;
-        for (var i=0; i < levelLength; i++) {
+        var nbLevel = this.gameJSON.levels.length;
+        for (var i=0; i < nbLevel; i++) {
             var level = this.gameJSON.levels[i];
             html += '<input type="button" value="'+ (i+1) + '" > '; 
         };
@@ -86,32 +77,10 @@ $(window).load(function() {
         // Set the button click event handlers to load level
         var self = this;
         $("#levelselectscreen input").on("click", function() {
-            self.levelsLoad(this.value-1);
+            self.currentLevel = new Level(this.value-1, self);
+            self.currentLevel.load();
             $("#levelselectscreen").hide();
         });
-    };
-
-    Game.prototype.levelsLoad = function(number) {
-       // Declare a new current level object
-        this.currentLevel = {
-            number: number,
-            hero: []
-        };
-        $("score").html("Score: " + this.score);
-        var level = this.gameJSON.levels[number];
-
-        // Load the background, foreground and slingshot images
-        this.currentLevel.backgroundImage = this.loader.loadImage(level.background);
-        this.currentLevel.foregroundImage = this.loader.loadImage(level.foreground);
-        this.slingshotImage = this.loader.loadImage(this.gameJSON.slingshotImage);
-        this.slingshotFrontImage = this.loader.loadImage(this.gameJSON.slingshotFrontImage);
-
-        // Call game.start() once the assets have loaded
-        if (this.loader.loaded) {
-            this.start();
-        } else {
-            this.loader.onload = this.start.bind(this);
-        } 
     };
 
     Game.prototype.showLevelScreen = function() {
@@ -119,7 +88,46 @@ $(window).load(function() {
         $("#levelselectscreen").show("slow");
     };
 
-    Game.prototype.start = function() {
+    // Level Class
+    var Level = function(number, game) {
+        this.game = game;
+        this.number = number;
+        this.assets = game.gameJSON.levels[number];
+        this.heros = [];
+        this.mode = "intro";
+        this.slingshotX = 140;
+        this.slingshotY = 280;
+        this.offsetLeft = 0;
+        this.ended = false;
+        this.score = 0;
+        this.animationFrame; // will be initialize in start() method
+        this.background; // will be initialize in load method
+        this.foreground; // will be initialize in load method
+        this.slingshotImage; // will be initialize in load method
+        this.slingshotFrontImage; // will be initialize in load method
+        this.loader; // loader object that will load all the assets
+    };
+
+    Level.prototype.load = function() {
+        $("score").html("Score: " + this.score);
+        this.loader = new Loader(this);
+        this.loader.init();
+
+        // Load the level assets (i.e: background, foreground and slingshot images)
+        this.backgroundImage = this.loader.loadImage(this.assets.background);
+        this.foregroundImage = this.loader.loadImage(this.assets.foreground);
+        this.slingshotImage = this.loader.loadImage(this.assets.slingshotImage);
+        this.slingshotFrontImage = this.loader.loadImage(this.assets.slingshotFrontImage);
+
+        // Call level.start() once the assets have loaded
+        if (this.loader.loaded) {
+            this.start();
+        } else {
+            this.loader.onload = this.start.bind(this);
+        }
+    };
+
+    Level.prototype.start = function() {
         $('.gamelayer').hide();
         // Display the game canvas and score 
         $('#gamecanvas').show();
@@ -131,11 +139,11 @@ $(window).load(function() {
                                                             }, self.canvas);
     };
 
-    Game.prototype.handlePanning = function() {
+    Level.prototype.handlePanning = function() {
         this.offsetLeft++;
     };
 
-    Game.prototype.animate = function() {
+    Level.prototype.animate = function() {
         // Animate the background
         this.handlePanning();
 
@@ -143,10 +151,10 @@ $(window).load(function() {
         // TODO
 
         // Draw the background with parallax scrolling
-        this.context.drawImage(this.currentLevel.backgroundImage, this.offsetLeft/4, 0, 640, 480, 0, 0, 640, 480);
-        this.context.drawImage(this.currentLevel.foregroundImage, this.offsetLeft, 0, 640, 480, 0, 0, 640, 480);
-        this.context.drawImage(this.slingshotImage, this.slingshotX - this.offsetLeft, this.slingshotY);
-        this.context.drawImage(this.slingshotFrontImage, this.slingshotX - this.offsetLeft, this.slingshotY);
+        game.context.drawImage(this.backgroundImage, this.offsetLeft/4, 0, 640, 480, 0, 0, 640, 480);
+        game.context.drawImage(this.foregroundImage, this.offsetLeft, 0, 640, 480, 0, 0, 640, 480);
+        game.context.drawImage(this.slingshotImage, this.slingshotX - this.offsetLeft, this.slingshotY);
+        game.context.drawImage(this.slingshotFrontImage, this.slingshotX - this.offsetLeft, this.slingshotY);
 
         if (!this.ended) {
             var self =  this;
@@ -156,11 +164,13 @@ $(window).load(function() {
         }
     };
 
-    var Loader = function() {
+    // Loader Class
+    var Loader = function(level) {
+        this.level = level;
         this.loaded = true;
         this.loadedCount = 0; // Assets that have been loaded so far
         this.totalCount = 0; // Total number of assets that need to be loaded
-        soundFileExtn = ".ogg"; // Default initialization of sound file extension
+        this.soundFileExtn = ".ogg"; // Default initialization of sound file extension
     };
 
     Loader.prototype.init = function() {
@@ -179,10 +189,17 @@ $(window).load(function() {
 
         // Check for ogg, then mp3, and finally set soundFileExtn to undefined
         this.soundFileExtn = oggSupport?".ogg":mp3Support?".mp3":undefined;
+
+        // Initialize the totalCount attribute;
+        this.countAssets();
     };
 
+    Loader.prototype.countAssets = function() {
+        var nbAssets = Object.keys(this.level.assets).length; // Warning this is not compatible w/ IE < IE9+
+        this.totalCount = nbAssets;
+    }
+
     Loader.prototype.loadImage = function(url) {
-        this.totalCount ++;
         this.loaded = false;
         $("#loadingscreen").show();
         var image = new Image();
@@ -192,12 +209,11 @@ $(window).load(function() {
     };
 
     Loader.prototype.loadSound = function(url) {
-        this.totalCount ++;
         this.loaded = false;
         $("loadingscreen").show();
         var audio = new Audio();
         audio.src = url + this.soundFileExtn;
-        audio.addEventListener("canplaythrough", this.itemLoaded, false);
+        audio.addEventListener("canplaythrough", this.itemLoaded.bind(this), false);
         return audio;
     };
 
