@@ -197,7 +197,7 @@ $(window).load(function() {
             }             
         }       
 
-        if(this.mode === "wait-for-firing"){  
+        if(this.mode === "wait-for-firing"){
             if (this.mouse.dragging){
                 this.panTo(this.mouse.x + this.offsetLeft)
             } else {
@@ -318,32 +318,33 @@ $(window).load(function() {
     Mouse.prototype.init = function () {
         // Set event handler for when the mouse is moved, is pressed and released
         //and when the mouse leave the canvas area
-        $("#gamecanvas").mousemove(this.mousemovehandler);
-        $("#gamecanvas").mousedown(this.mousedownhandler);
-        $("#gamecanvas").mouseup(this.mouseuphandler);
-        $("#gamecanvas").mouseout(this.mouseuphandler);
+        $("#gamecanvas").mousemove(this, this.mousemovehandler);
+        $("#gamecanvas").mousedown(this, this.mousedownhandler);
+        $("#gamecanvas").mouseup(this, this.mouseuphandler);
+        $("#gamecanvas").mouseout(this, this.mouseuphandler);
     };
 
     Mouse.prototype.mousemovehandler = function(ev) {
         var offset = $("#gamecanvas").offset();
-        this.x = ev.pageX - offset.left;
-        this.y = ev.pageY - offset.top;
 
-        if(this.down) {
-            this.dragging = true;
+        ev.data.x = ev.pageX - offset.left;
+        ev.data.y = ev.pageY - offset.top;
+
+        if(ev.data.down) {
+            ev.data.dragging = true;
         }
     };
 
     Mouse.prototype.mousedownhandler = function(ev) {
-        this.down = true;
-        this.downX = this.x;
-        this.downY = this.y;
+        ev.data.down = true;
+        ev.data.downX = this.x;
+        ev.data.downY = this.y;
         ev.originalEvent.preventDefault();
     };
 
     Mouse.prototype.mouseuphandler = function(ev) {
-        this.down = false;
-        this.dragging = false;
+        ev.data.down = false;
+        ev.data.dragging = false;
     };
 
     //Main
