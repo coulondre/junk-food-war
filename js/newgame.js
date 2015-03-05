@@ -91,22 +91,27 @@ $(window).load(function() {
     // Level Class
     var Level = function(number, game) {
         this.game = game;
+        this.loader; // loader object that will load all the assets
+        this.mouse;
         this.number = number;
         this.assets = game.gameJSON.levels[number];
         this.heros = [];
         this.mode = "intro";
         this.slingshotX = 140;
         this.slingshotY = 280;
-        this.offsetLeft = 0;
+        this.offsetLeft = 0; // Variable defined for screen panning and parallax
         this.ended = false;
         this.score = 0;
+        this.maxSpeed = 3;
+        this.minOffset = 0;
+        this.maxOffset = 300;
+
         this.animationFrame; // will be initialize in start() method
         this.background; // will be initialize in load method
         this.foreground; // will be initialize in load method
         this.slingshotImage; // will be initialize in load method
         this.slingshotFrontImage; // will be initialize in load method
-        this.loader; // loader object that will load all the assets
-        this.mouse;
+       
     };
 
     Level.prototype.init = function() {
@@ -138,10 +143,6 @@ $(window).load(function() {
                                                             }, self.canvas);
     };
 
-    Level.prototype.handlePanning = function() {
-        this.offsetLeft++;
-    };
-
     Level.prototype.animate = function() {
         // Animate the background
         this.handlePanning();
@@ -150,10 +151,10 @@ $(window).load(function() {
         // TODO
 
         // Draw the background with parallax scrolling
-        game.context.drawImage(this.backgroundImage, this.offsetLeft/4, 0, 640, 480, 0, 0, 640, 480);
-        game.context.drawImage(this.foregroundImage, this.offsetLeft, 0, 640, 480, 0, 0, 640, 480);
-        game.context.drawImage(this.slingshotImage, this.slingshotX - this.offsetLeft, this.slingshotY);
-        game.context.drawImage(this.slingshotFrontImage, this.slingshotX - this.offsetLeft, this.slingshotY);
+        this.game.context.drawImage(this.backgroundImage, this.offsetLeft/4, 0, 640, 480, 0, 0, 640, 480);
+        this.game.context.drawImage(this.foregroundImage, this.offsetLeft, 0, 640, 480, 0, 0, 640, 480);
+        this.game.context.drawImage(this.slingshotImage, this.slingshotX - this.offsetLeft, this.slingshotY);
+        this.game.context.drawImage(this.slingshotFrontImage, this.slingshotX - this.offsetLeft, this.slingshotY);
 
         if (!this.ended) {
             var self =  this;
@@ -161,6 +162,69 @@ $(window).load(function() {
                                                                     self.animate();
                                                                 }, self.canvas);
         }
+    };
+
+    // panTo function pans the screen to a given x coordinate and returns true if the coordinate
+    // is near the center of the screen or if the screen has panned to the extreme left or right.
+    // It also caps the panning speed using maxSpeed so that the panning never become too fast
+    Level.prototype.panTo = function(newCenter) {
+        // TODO: Hugly code, please refactor
+        if (Math.abs(newCenter-this.offsetLeft-this.game.canvas.width/4)>0 
+            && this.offsetLeft <= this.maxOffset && this.offsetLeft >= this.minOffset){
+            var deltaX = Math.round((newCenter-this.offsetLeft-this.game.canvas.width/4)/2);
+            if (deltaX && Math.abs(deltaX)>this.maxSpeed){
+                deltaX = this.maxSpeed*Math.abs(deltaX)/(deltaX);
+            }
+            this.offsetLeft += deltaX;
+        } else {
+            
+            return true;
+        }
+        if (this.offsetLeft < this.minOffset){
+            this.offsetLeft = this.minOffset;
+            return true;
+        } else if (this.offsetLeft > this.maxOffset){
+            this.offsetLeft = this.maxOffset;
+            return true;
+        }        
+        return false;
+    };
+
+    Level.prototype.handlePanning = function() {
+        if(this.mode === "intro"){        
+            if(this.panTo(700)){
+                this.mode = "load-next-hero";
+            }             
+        }       
+
+        if(this.mode === "wait-for-firing"){  
+            if (this.mouse.dragging){
+                this.panTo(this.mouse.x + this.offsetLeft)
+            } else {
+                this.panTo(this.slingshotX);
+            }
+        }
+        
+        if (this.mode === "load-next-hero"){
+            // TODO: 
+            // Check if any villains are alive, if not, end the level (success)
+            // Check if there are any more heroes left to load, if not end the level (failure)
+            // Load the hero and set mode to wait-for-firing
+            this.mode = "wait-for-firing";            
+        }
+        
+        if(this.mode === "firing"){  
+            this.panTo(this.slingshotX);
+        }
+        
+        if (this.mode === "fired"){
+            // TODO:
+            // Pan to wherever the hero currently is
+        }
+    };
+
+    Level.prototype.showEndingScreen = function() {
+
     };
 
     // Loader Class
