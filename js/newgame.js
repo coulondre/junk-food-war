@@ -41,16 +41,27 @@ $(window).load(function() {
 
     Game.prototype.jsonLoad = function(url) {
         // Load JSON file representing the game
-        var self = this;
+        /*var self = this;
         $.getJSON(url, function(data) {
             self.gameJSON = data.response;
             self.init();
         }).error(function(e) {
             console.log(e);      
-        });
+        });*/
     };
 
-    Game.prototype.init = function() {
+    Game.prototype.init = function(url) {
+        // Load JSON file representing the game
+        var self = this;
+        $.ajax({
+            type: "GET",
+            url: url,
+            async: false,
+            success: function(data) {
+            self.gameJSON = data.response;
+            }
+        });
+
         // Initialize Levels
         this.initLevels();
 
@@ -59,7 +70,7 @@ $(window).load(function() {
         $("#gamestartscreen").show();
 
         // Play button listener
-        var self = this;
+        //var self = this;
         $("#play").on("click", function() {
             self.showLevelScreen();
         });
@@ -67,6 +78,7 @@ $(window).load(function() {
 
     Game.prototype.initLevels = function() {
         var html = "";
+        console.log(this.gameJSON);
         var nbLevel = this.gameJSON.levels.length;
         for (var i=0; i < nbLevel; i++) {
             var level = this.gameJSON.levels[i];
@@ -349,5 +361,6 @@ $(window).load(function() {
 
     //Main
     var game = new Game();
-    game.jsonLoad(jsonURL);
+    //game.jsonLoad(jsonURL);
+    game.init(jsonURL);
 });
