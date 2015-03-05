@@ -224,7 +224,19 @@ $(window).load(function() {
     };
 
     Level.prototype.showEndingScreen = function() {
-
+        if (this.mode === "level-success"){
+            if(this.number < this.gameJSON.levels.length-1){
+                $("#endingmessage").html("Level Complete. Well Done!!!");
+                $("#playnextlevel").show();
+            } else {
+                $("#endingmessage").html("All Levels Complete. Well Done!!!");
+                $("#playnextlevel").hide();
+            }
+        } else if (this.mode === "level-failure"){          
+            $("#endingmessage").html("Failed. Play Again?");
+            $("#playnextlevel").hide();
+        }       
+        $('#endingscreen').show();
     };
 
     // Loader Class
@@ -304,7 +316,8 @@ $(window).load(function() {
     };
 
     Mouse.prototype.init = function () {
-        // Set event handler for when the mouse is moved, is pressed and released and when the mouse leave the canvas area
+        // Set event handler for when the mouse is moved, is pressed and released
+        //and when the mouse leave the canvas area
         $("#gamecanvas").mousemove(this.mousemovehandler);
         $("#gamecanvas").mousedown(this.mousedownhandler);
         $("#gamecanvas").mouseup(this.mouseuphandler);
