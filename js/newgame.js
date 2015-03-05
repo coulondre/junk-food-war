@@ -39,18 +39,17 @@ $(window).load(function() {
 
     };
 
-    Game.prototype.jsonLoad = function(url) {
-        // Load JSON file representing the game
-        /*var self = this;
-        $.getJSON(url, function(data) {
-            self.gameJSON = data.response;
-            self.init();
-        }).error(function(e) {
-            console.log(e);      
-        });*/
-    };
-
     Game.prototype.init = function(url) {
+        // Hide all game layers and display the start screen
+        $(".gamelayer").hide();
+        $("#gamestartscreen").show();
+
+        // Play button listener
+        var self = this;
+        $("#play").on("click", function() {
+            self.showLevelScreen();
+        });
+
         // Load JSON file representing the game
         var self = this;
         $.ajax({
@@ -64,21 +63,10 @@ $(window).load(function() {
 
         // Initialize Levels
         this.initLevels();
-
-        // Hide all game layers and display the start screen
-        $(".gamelayer").hide();
-        $("#gamestartscreen").show();
-
-        // Play button listener
-        //var self = this;
-        $("#play").on("click", function() {
-            self.showLevelScreen();
-        });
     };
 
     Game.prototype.initLevels = function() {
         var html = "";
-        console.log(this.gameJSON);
         var nbLevel = this.gameJSON.levels.length;
         for (var i=0; i < nbLevel; i++) {
             var level = this.gameJSON.levels[i];
