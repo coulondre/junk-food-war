@@ -95,7 +95,7 @@ $(window).load(function() {
         this.mouse;
         this.number = number;
         this.assets = game.gameJSON.levels[number];
-        this.heros = [];
+        this.entities = [];
         this.mode = "intro";
         this.slingshotX = 140;
         this.slingshotY = 280;
@@ -120,6 +120,26 @@ $(window).load(function() {
         this.mouse = new Mouse();
         this.mouse.init();
         this.load();
+        // tests Entity Class and Vilain and Hero Subclass
+        // TODO :
+        // * remove it once it will be ok
+        // * create a method of class Level : createEntities which will create
+        // all the entities of the level based on the json config file
+        var dirt = new Entity(3.0,1.5,0.2);
+        console.log(dirt);
+        dirt.create();
+        var glass = new Entity(2.4,0.4,0.15);
+        console.log(glass);
+        glass.create();
+        var burger = new Vilain(1,0.5,0.4,40,{shape:"circle", radius:25});
+        console.log(burger);
+        burger.create();
+        var sodacan = new Vilain(1,0.5,0.7,80,{shape:"reactangle", width:40, height:60});
+        console.log(sodacan);
+        sodacan.create();
+        var orange = new Hero(1.5,0.5,0.4,{shape:"circle", radius:25});
+        console.log(orange);
+        orange.create();
     };
 
     Level.prototype.load = function() {
@@ -346,6 +366,42 @@ $(window).load(function() {
         ev.data.down = false;
         ev.data.dragging = false;
     };
+
+    // Entity Class
+    var Entity = function(density, friction, restitution, fullHealth) {
+        this.density = density;
+        this.friction = friction;
+        this.restitution = restitution;
+        this.fullHealth = fullHealth || "undefined";
+    };
+    
+    // Create a Box2D body and add it to the world
+    Entity.prototype.create = function() {
+        console.log("Ca marche ça mère");
+    };
+
+    // Draw the entity in to the game canvas
+    Entity.prototype.draw = function() {
+
+    };
+
+    // Hero Class --> Subclass of Entity
+    // stle = {shape: "circle", radius:25}
+    var Hero = function(density, friction, restitution, style) {
+        Entity.call(this,density,friction, restitution);
+        this.style = style;
+    };
+    Hero.prototype=Object.create(Entity.prototype);
+    Hero.prototype.constructor = Hero;
+
+    // Vilains Class --> Subclass of Entity
+    // style = {shape: "rectangle", width:40, height:50}
+    var Vilain = function(density, friction, restitution, fullHealth, style) {
+        Entity.call(this,density,friction, restitution, fullHealth);
+        this.style = style;
+    };
+    Vilain.prototype=Object.create(Entity.prototype);
+    Vilain.prototype.constructor = Vilain;
 
     //Main
     var game = new Game();
