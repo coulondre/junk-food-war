@@ -88,6 +88,10 @@ $(window).load(function() {
         $("#levelselectscreen").show("slow");
     };
 
+    var MyBox2D = function() {
+
+    }
+
     // Level Class
     var Level = function(number, game) {
         this.game = game;
@@ -120,26 +124,6 @@ $(window).load(function() {
         this.mouse = new Mouse();
         this.mouse.init();
         this.load();
-        // tests Entity Class and Vilain and Hero Subclass
-        // TODO :
-        // * remove it once it will be ok
-        // * create a method of class Level : createEntities which will create
-        // all the entities of the level based on the json config file
-        var dirt = new Entity(3.0,1.5,0.2);
-        console.log(dirt);
-        dirt.create();
-        var glass = new Entity(2.4,0.4,0.15);
-        console.log(glass);
-        glass.create();
-        var burger = new Vilain(1,0.5,0.4,40,{shape:"circle", radius:25});
-        console.log(burger);
-        burger.create();
-        var sodacan = new Vilain(1,0.5,0.7,80,{shape:"reactangle", width:40, height:60});
-        console.log(sodacan);
-        sodacan.create();
-        var orange = new Hero(1.5,0.5,0.4,{shape:"circle", radius:25});
-        console.log(orange);
-        orange.create();
     };
 
     Level.prototype.load = function() {
@@ -149,6 +133,59 @@ $(window).load(function() {
         this.foregroundImage = this.loader.loadImage(this.assets.foreground);
         this.slingshotImage = this.loader.loadImage(this.assets.slingshotImage);
         this.slingshotFrontImage = this.loader.loadImage(this.assets.slingshotFrontImage);
+        this.createEntities();
+    };
+
+    // create the entities for the current level and load the associated assets
+    Level.prototype.createEntities = function() {
+        var entitiesProp = this.assets.entities
+        var entitiesLength = entitiesProp.length;
+        for (var i = 0; i < entitiesLength; i++) {
+            this.createEntity(entitiesProp[i]);
+        };
+    };
+
+    // Create an entity
+    Level.prototype.createEntity = function(entity) {
+        switch(entity.type){
+            case "block": // simple rectangles
+                var definition = new EntityDef(entity.entityDef.name, entity.entityDef.density, entity.entityDef.friction, entity.entityDef.restitution, entity.entityDef.url);
+                var block = new Block(definition,entity.x,entity.y,entity.width, entity.height,entity.fullHealth,entity.angle);
+                console.log(block);
+
+                /*entity.health = definition.fullHealth;
+                entity.fullHealth = definition.fullHealth;
+                entity.shape = "rectangle"; 
+                entity.sprite = loader.loadImage("images/entities/"+entity.name+".png");                        
+                entity.breakSound = game.breakSound[entity.name];
+                box2d.createRectangle(entity,definition);*/             
+                break;
+            case "ground": // simple rectangles
+                // No need for health. These are indestructible
+                entity.shape = "rectangle";  
+                // No need for sprites. These won't be drawn at all   
+                box2d.createRectangle(entity,definition);              
+                break;  
+            case "hero":    // simple circles
+            case "villain": // can be circles or rectangles
+                entity.health = definition.fullHealth;
+                entity.fullHealth = definition.fullHealth;
+                entity.sprite = loader.loadImage("images/entities/"+entity.name+".png");
+                entity.shape = definition.shape;  
+                entity.bounceSound = game.bounceSound;
+                if(definition.shape == "circle"){
+                    entity.radius = definition.radius;
+                    box2d.createCircle(entity,definition);                  
+                } else if(definition.shape == "rectangle"){
+                    entity.width = definition.width;
+                    entity.height = definition.height;
+                    box2d.createRectangle(entity,definition);                   
+                }                                                
+                break;                          
+            default:
+                console.log("Undefined entity type",entity.type);
+                break;
+        }
     };
 
     Level.prototype.start = function() {
@@ -368,11 +405,11 @@ $(window).load(function() {
     };
 
     // Entity Class
-    var Entity = function(density, friction, restitution, fullHealth) {
-        this.density = density;
-        this.friction = friction;
-        this.restitution = restitution;
-        this.fullHealth = fullHealth || "undefined";
+    var Entity = function(entityDef, x, y) {
+        this.entityDef = entityDef;
+        this.x = x;
+        this.y = y;
+        this.isStatic = false;
     };
     
     // Create a Box2D body and add it to the world
@@ -385,23 +422,55 @@ $(window).load(function() {
 
     };
 
-    // Hero Class --> Subclass of Entity
-    // stle = {shape: "circle", radius:25}
-    var Hero = function(density, friction, restitution, style) {
-        Entity.call(this,density,friction, restitution);
-        this.style = style;
+    // Ground Class --> Subclass of Entity
+    var Ground = function(entityDef, x, y, width, height) {
+        Entity.call(this,entityDef, x, y);
+        this.width = width;
+        this.height = height;
+        this.isStatic = true;
     };
-    Hero.prototype=Object.create(Entity.prototype);
+    Ground.prototype = Object.create(Entity.prototype);
+    Ground.prototype.constructor = Ground;
+
+    // Block Class --> Subclass of Entity
+    var Block = function(entityDef, x, y, width, height, fullHealth, angle) {
+        Entity.call(this,entityDef, x, y);
+        this.width = width;
+        this.height = height;
+        this.fullHealth = fullHealth;
+        this.angle = angle || "undefined";
+    };
+    Block.prototype = Object.create(Entity.prototype);
+    Block.prototype.constructor = Block;
+
+    // Hero Class --> Subclass of Entity
+    var Hero = function(entityDef, x, y) {
+        Entity.call(this,entityDef, x, y);
+    };
+    Hero.prototype = Object.create(Entity.prototype);
     Hero.prototype.constructor = Hero;
 
-    // Vilains Class --> Subclass of Entity
-    // style = {shape: "rectangle", width:40, height:50}
-    var Vilain = function(density, friction, restitution, fullHealth, style) {
-        Entity.call(this,density,friction, restitution, fullHealth);
-        this.style = style;
+    // Villains Class --> Subclass of Entity
+    var Villain = function(entityDef, x, y, fullHealth, calories) {
+        Entity.call(this,entityDef, x, y);
+        this.fullHealth = fullHealth;
+        this.calories = calories;
     };
-    Vilain.prototype=Object.create(Entity.prototype);
-    Vilain.prototype.constructor = Vilain;
+    Villain.prototype = Object.create(Entity.prototype);
+    Villain.prototype.constructor = Villain;
+    
+    // EntityType Class
+    // Define the fixtures parameters of an Entity for the Physic Engine, the url of the image asset and the details on the shape
+    // style = {shape: "rectangle", width:40, height:50}
+    // style = {shape: "circle", radius:25}
+    var EntityDef = function(name, density, friction, restitution, url, style) {
+        this.name = name;
+        this.density = density;
+        this.friction = friction;
+        this.restitution = restitution;
+        this.url = url;
+        this.style = style || "undefined";
+    };
 
     //Main
     var game = new Game();

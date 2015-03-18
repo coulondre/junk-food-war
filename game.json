@@ -1,10 +1,30 @@
 {"response": {
 		"levels": [
 			{
-			"slingshotImage": "images/slingshot.png",
-			"slingshotFrontImage": "images/slingshot-front.png",
-			"foreground": "images/backgrounds/desert-foreground.png",
-			"background": "images/backgrounds/clouds-background.png"
+				"slingshotImage": "images/slingshot.png",
+				"slingshotFrontImage": "images/slingshot-front.png",
+				"foreground": "images/backgrounds/desert-foreground.png",
+				"background": "images/backgrounds/clouds-background.png",
+				"entities": [
+					{
+						"name": "glassBlock",
+						"type": "block",
+						"entityDef":
+						{
+							"name": "glass",
+							"density":2.4,
+							"friction":0.4,
+							"restitution":0.15,
+							"url": "images/entities/glass"
+						},
+						"x":670,
+						"y":317.5,
+						"width":100,
+						"height":25,
+						"fullHealth":100,
+						"angle":90
+					}
+				]
 			},
 			{
 			"slingshotImage": "images/slingshot.png",
