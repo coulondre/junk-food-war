@@ -1,1 +1,4 @@
 * reflechir à l'ajout d'une classe PhysicEngine générique
+* enlever les variables globales relatives à Box2D
+* séparer couche présentation cad manipulation du HTML de la logique du jeux
+* ajouter un debug mode

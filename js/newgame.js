@@ -28,9 +28,20 @@ $(window).load(function() {
     // Global variables
     var jsonURL = "http://localhost/junk-food-war/game.json";
 
+    var b2Vec2 = Box2D.Common.Math.b2Vec2;
+    var b2BodyDef = Box2D.Dynamics.b2BodyDef;
+    var b2Body = Box2D.Dynamics.b2Body;
+    var b2FixtureDef = Box2D.Dynamics.b2FixtureDef;
+    var b2Fixture = Box2D.Dynamics.b2Fixture;
+    var b2World = Box2D.Dynamics.b2World;
+    var b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape;
+    var b2CircleShape = Box2D.Collision.Shapes.b2CircleShape;
+    var b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
+
     // Game Class
     var Game = function() {
         this.gameJSON;
+        this.physicEngine;
         this.canvas = $("#gamecanvas")[0];
         this.context = this.canvas.getContext('2d');
         this.levels = [];
@@ -88,15 +99,63 @@ $(window).load(function() {
         $("#levelselectscreen").show("slow");
     };
 
-    var  = function() {
+    var Box2DEngine = function() {
+        this.scale = 30;
+        this.world;
+    };
 
-    }
+    Box2DEngine.prototype.init = function(){
+        // Setup the box2d World that will do most of they physics calculation
+        var gravity = new b2Vec2(0,9.8); //declare gravity as 9.8 m/s^2 downwards
+        var allowSleep = true; //Allow objects that are at rest to fall asleep and be excluded from calculations
+        this.world = new b2World(gravity,allowSleep);
+
+        // Setup debug draw
+        var debugContext = document.getElementById('debugcanvas').getContext('2d');
+        var debugDraw = new b2DebugDraw();
+        debugDraw.SetSprite(debugContext);
+        debugDraw.SetDrawScale(this.scale);
+        debugDraw.SetFillAlpha(0.3);
+        debugDraw.SetLineThickness(1.0);
+        debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);    
+        this.world.SetDebugDraw(debugDraw);
+    };
+
+    Box2DEngine.prototype.createRectangle = function(entity) {
+        var bodyDef = new b2BodyDef;
+        if(entity.isStatic){
+            bodyDef.type = b2Body.b2_staticBody;
+        } else {
+            bodyDef.type = b2Body.b2_dynamicBody;
+        }
+        
+        bodyDef.position.x = entity.x/this.scale;
+        bodyDef.position.y = entity.y/this.scale;
+        if (entity.angle) {
+            bodyDef.angle = Math.PI*entity.angle/180;
+        }
+        
+        var fixtureDef = new b2FixtureDef;
+        fixtureDef.density = entity.entityDef.density;
+        fixtureDef.friction = entity.entityDef.friction;
+        fixtureDef.restitution = entity.entityDef.restitution;
+
+        fixtureDef.shape = new b2PolygonShape;
+        fixtureDef.shape.SetAsBox(entity.width/2/this.scale,entity.height/2/this.scale);
+        
+        var body = this.world.CreateBody(bodyDef); 
+        body.SetUserData(entity);
+        
+        var fixture = body.CreateFixture(fixtureDef);
+        return body;
+    };
 
     // Level Class
     var Level = function(number, game) {
         this.game = game;
         this.loader; // loader object that will load all the assets
         this.mouse;
+        this.engine;
         this.number = number;
         this.assets = game.gameJSON.levels[number];
         this.entities = [];
@@ -123,6 +182,8 @@ $(window).load(function() {
         this.loader.init();
         this.mouse = new Mouse();
         this.mouse.init();
+        this.engine = new Box2DEngine();
+        this.engine.init();
         this.load();
     };
 
@@ -157,8 +218,8 @@ $(window).load(function() {
                 entity.fullHealth = definition.fullHealth;
                 entity.shape = "rectangle"; 
                 entity.sprite = loader.loadImage("images/entities/"+entity.name+".png");                        
-                entity.breakSound = game.breakSound[entity.name];
-                box2d.createRectangle(entity,definition);*/             
+                entity.breakSound = game.breakSound[entity.name];*/
+                this.engine.createRectangle(block);           
                 break;
             case "ground": // simple rectangles
                 // No need for health. These are indestructible
@@ -213,12 +274,20 @@ $(window).load(function() {
         this.game.context.drawImage(this.slingshotImage, this.slingshotX - this.offsetLeft, this.slingshotY);
         this.game.context.drawImage(this.slingshotFrontImage, this.slingshotX - this.offsetLeft, this.slingshotY);
 
+        // Draw all the bodies
+        this.drawAllBodies();
+
         if (!this.ended) {
             var self =  this;
             this.animationFrame = window.requestAnimationFrame(function() {
                                                                     self.animate();
                                                                 }, self.canvas);
         }
+    };
+
+    Level.prototype.drawAllBodies = function() {
+        this.engine.world.DrawDebugData();
+        // TODO: Iterate through all the bodies and draw them on the canvas
     };
 
     // panTo function pans the screen to a given x coordinate and returns true if the coordinate
@@ -328,7 +397,7 @@ $(window).load(function() {
 
     Loader.prototype.countAssets = function() {
         var nbAssets = Object.keys(this.level.assets).length; // Warning this is not compatible w/ IE < IE9+
-        this.totalCount = nbAssets;
+        this.totalCount = nbAssets-1;
     };
 
     Loader.prototype.loadImage = function(url) {
