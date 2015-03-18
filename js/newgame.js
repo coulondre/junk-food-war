@@ -88,7 +88,7 @@ $(window).load(function() {
         $("#levelselectscreen").show("slow");
     };
 
-    var MyBox2D = function() {
+    var  = function() {
 
     }
 
