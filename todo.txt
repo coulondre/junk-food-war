@@ -2,3 +2,10 @@
 * enlever les variables globales relatives à Box2D
 * séparer couche présentation cad manipulation du HTML de la logique du jeux
 * ajouter un debug mode
+* corriger la methode countAssets de la classe Loader
+* reflechir à une strategie avec un sprite avec toutes les images plutot qu'avec des images séparées
+* reflechir à une strategie pour que les URLs des assets ne soient plus en dur dans le json (variable globale pour base_URL, fichier de config ?)
+* écrire une critique du code game.js et un comparatif game.js Vs newgame.js
+* réfléchir au moyen d'avoir un tableau d'EntityDef et un tableau d'entity séparé. Avantage : 1/ plus simple a écrire dans le json 2/ évite de re-créer des entityDef déja existante -> meilleure perf
+* changer le wording "assets" dans la clase level
+* améliorer la methode createEntity qui peux etre largement générisisée

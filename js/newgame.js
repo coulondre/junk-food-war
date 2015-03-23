@@ -27,7 +27,7 @@
 $(window).load(function() {
     // Global variables
     var jsonURL = "http://localhost/junk-food-war/game.json";
-
+    // Box2D global variables defined for convenience
     var b2Vec2 = Box2D.Common.Math.b2Vec2;
     var b2BodyDef = Box2D.Dynamics.b2BodyDef;
     var b2Body = Box2D.Dynamics.b2Body;
@@ -150,6 +150,34 @@ $(window).load(function() {
         return body;
     };
 
+    Box2DEngine.prototype.createCircle = function(entity) {
+        var bodyDef = new b2BodyDef;
+        if(entity.isStatic){
+            bodyDef.type = b2Body.b2_staticBody;
+        } else {
+            bodyDef.type = b2Body.b2_dynamicBody;
+        }
+        
+        bodyDef.position.x = entity.x/this.scale;
+        bodyDef.position.y = entity.y/this.scale;
+        
+        if (entity.angle) {
+            bodyDef.angle = Math.PI*entity.angle/180;
+        }           
+        var fixtureDef = new b2FixtureDef;
+        fixtureDef.density = entity.entityDef.density;
+        fixtureDef.friction = entity.entityDef.friction;
+        fixtureDef.restitution = entity.entityDef.restitution;
+
+        fixtureDef.shape = new b2CircleShape(entity.radius/this.scale);
+        
+        var body = this.world.CreateBody(bodyDef); 
+        body.SetUserData(entity);
+
+        var fixture = body.CreateFixture(fixtureDef);
+        return body;
+    };
+
     // Level Class
     var Level = function(number, game) {
         this.game = game;
@@ -208,40 +236,38 @@ $(window).load(function() {
 
     // Create an entity
     Level.prototype.createEntity = function(entity) {
+        // create the entityDef of the entity
+        var definition = new EntityDef(entity.entityDef.name, entity.entityDef.density, entity.entityDef.friction, entity.entityDef.restitution, entity.entityDef.url, entity.entityDef.style);
+
         switch(entity.type){
-            case "block": // simple rectangles
-                var definition = new EntityDef(entity.entityDef.name, entity.entityDef.density, entity.entityDef.friction, entity.entityDef.restitution, entity.entityDef.url);
+            case "block":
                 var block = new Block(definition,entity.x,entity.y,entity.width, entity.height,entity.fullHealth,entity.angle);
                 console.log(block);
-
-                /*entity.health = definition.fullHealth;
-                entity.fullHealth = definition.fullHealth;
-                entity.shape = "rectangle"; 
-                entity.sprite = loader.loadImage("images/entities/"+entity.name+".png");                        
-                entity.breakSound = game.breakSound[entity.name];*/
                 this.engine.createRectangle(block);           
                 break;
             case "ground": // simple rectangles
-                // No need for health. These are indestructible
-                entity.shape = "rectangle";  
-                // No need for sprites. These won't be drawn at all   
-                box2d.createRectangle(entity,definition);              
+                var ground = new Ground(definition,entity.x,entity.y,entity.width, entity.height);
+                console.log(ground);
+                this.engine.createRectangle(ground);              
                 break;  
-            case "hero":    // simple circles
+            case "hero": // simple circles
+                var hero = new Hero(definition,entity.x,entity.y);
+                hero.radius = definition.style.radius;
+                console.log(hero);
+                this.engine.createCircle(hero);
+                break;
             case "villain": // can be circles or rectangles
-                entity.health = definition.fullHealth;
-                entity.fullHealth = definition.fullHealth;
-                entity.sprite = loader.loadImage("images/entities/"+entity.name+".png");
-                entity.shape = definition.shape;  
-                entity.bounceSound = game.bounceSound;
-                if(definition.shape == "circle"){
-                    entity.radius = definition.radius;
-                    box2d.createCircle(entity,definition);                  
-                } else if(definition.shape == "rectangle"){
-                    entity.width = definition.width;
-                    entity.height = definition.height;
-                    box2d.createRectangle(entity,definition);                   
-                }                                                
+                var villain = new Villain(definition,entity.x,entity.y,entity.fullHealth, entity.calories);
+                if(definition.style.shape === "circle"){
+                    villain.radius = definition.style.radius;
+                    console.log(villain);
+                    this.engine.createCircle(villain);                  
+                } else if(definition.style.shape === "rectangle"){
+                    villain.width = definition.style.width;
+                    villain.height = definition.style.height;
+                    console.log(villain);
+                    this.engine.createRectangle(villain);                   
+                };
                 break;                          
             default:
                 console.log("Undefined entity type",entity.type);
