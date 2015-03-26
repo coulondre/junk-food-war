@@ -9,3 +9,4 @@
 * réfléchir au moyen d'avoir un tableau d'EntityDef et un tableau d'entity séparé. Avantage : 1/ plus simple a écrire dans le json 2/ évite de re-créer des entityDef déja existante -> meilleure perf
 * changer le wording "assets" dans la clase level
 * améliorer la methode createEntity qui peux etre largement générisisée
+* DRI : refactor des methodes createRectangle et createCircle de la class Box2DEngine
