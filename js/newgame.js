@@ -238,34 +238,44 @@ $(window).load(function() {
     Level.prototype.createEntity = function(entity) {
         // create the entityDef of the entity
         var definition = new EntityDef(entity.entityDef.name, entity.entityDef.density, entity.entityDef.friction, entity.entityDef.restitution, entity.entityDef.url, entity.entityDef.style);
-
+        if(!definition){
+            console.log ("Undefined entity name",entity.entityDef.name);
+            return;
+        }
         switch(entity.type){
-            case "block":
-                var block = new Block(definition,entity.x,entity.y,entity.width, entity.height,entity.fullHealth,entity.angle);
-                console.log(block);
-                this.engine.createRectangle(block);           
-                break;
             case "ground": // simple rectangles
                 var ground = new Ground(definition,entity.x,entity.y,entity.width, entity.height);
-                console.log(ground);
+                if (entity.entityDef.url != "undefined") {
+                    ground.sprite = this.loader.loadImage(entity.entityDef.url);
+                }
                 this.engine.createRectangle(ground);              
                 break;  
+            case "block":
+                var block = new Block(definition,entity.x,entity.y,entity.width, entity.height,entity.fullHealth,entity.angle);
+                if (entity.entityDef.url != "undefined") {
+                    block.sprite = this.loader.loadImage(entity.entityDef.url);
+                }
+                this.engine.createRectangle(block);           
+                break;
             case "hero": // simple circles
                 var hero = new Hero(definition,entity.x,entity.y);
                 hero.radius = definition.style.radius;
-                console.log(hero);
+                if (entity.entityDef.url != "undefined") {
+                    hero.sprite = this.loader.loadImage(entity.entityDef.url);
+                }
                 this.engine.createCircle(hero);
                 break;
             case "villain": // can be circles or rectangles
                 var villain = new Villain(definition,entity.x,entity.y,entity.fullHealth, entity.calories);
+                if (entity.entityDef.url != "undefined") {
+                    villain.sprite = this.loader.loadImage(entity.entityDef.url);
+                }
                 if(definition.style.shape === "circle"){
                     villain.radius = definition.style.radius;
-                    console.log(villain);
                     this.engine.createCircle(villain);                  
                 } else if(definition.style.shape === "rectangle"){
                     villain.width = definition.style.width;
                     villain.height = definition.style.height;
-                    console.log(villain);
                     this.engine.createRectangle(villain);                   
                 };
                 break;                          
@@ -313,7 +323,24 @@ $(window).load(function() {
 
     Level.prototype.drawAllBodies = function() {
         this.engine.world.DrawDebugData();
-        // TODO: Iterate through all the bodies and draw them on the canvas
+
+        // Iterate through all the bodies and draw them on the canvas
+        for (var body = this.engine.world.GetBodyList(); body; body = body.GetNext()) {
+            var entity = body.GetUserData();
+            
+            if (entity) {
+                var position = body.GetPosition();
+                var angle = body.GetAngle();
+                // Translate and rotate the canvas context to the position and angle of the entity
+                this.game.context.translate(position.x*this.engine.scale-this.offsetLeft, position.y*this.engine.scale);
+                this.game.context.rotate(angle);
+                // Draw the entity
+                entity.draw(this.game.context);
+                // Translate and rotate the context back to the original position
+                this.game.context.rotate(-angle);
+                this.game.context.translate(-position.x*this.engine.scale+this.offsetLeft, -position.y*this.engine.scale);
+            }
+        };
     };
 
     // panTo function pans the screen to a given x coordinate and returns true if the coordinate
@@ -423,7 +450,8 @@ $(window).load(function() {
 
     Loader.prototype.countAssets = function() {
         var nbAssets = Object.keys(this.level.assets).length; // Warning this is not compatible w/ IE < IE9+
-        this.totalCount = nbAssets-1;
+        // WARNING: BAD CODE, NEED TO BE FIXED
+        this.totalCount = 13;
     };
 
     Loader.prototype.loadImage = function(url) {
@@ -505,16 +533,7 @@ $(window).load(function() {
         this.x = x;
         this.y = y;
         this.isStatic = false;
-    };
-    
-    // Create a Box2D body and add it to the world
-    Entity.prototype.create = function() {
-        console.log("Ca marche ça mère");
-    };
-
-    // Draw the entity in to the game canvas
-    Entity.prototype.draw = function() {
-
+        this.sprite; // Will be initialize in method createEntity of class Level
     };
 
     // Ground Class --> Subclass of Entity
@@ -527,6 +546,9 @@ $(window).load(function() {
     Ground.prototype = Object.create(Entity.prototype);
     Ground.prototype.constructor = Ground;
 
+    Ground.prototype.draw = function(context) {
+    };
+
     // Block Class --> Subclass of Entity
     var Block = function(entityDef, x, y, width, height, fullHealth, angle) {
         Entity.call(this,entityDef, x, y);
@@ -538,12 +560,27 @@ $(window).load(function() {
     Block.prototype = Object.create(Entity.prototype);
     Block.prototype.constructor = Block;
 
+    Block.prototype.draw = function(context) {
+        context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
+                        -this.width/2-1,-this.height/2-1,this.width+2,this.height+2);
+    };
+
     // Hero Class --> Subclass of Entity
     var Hero = function(entityDef, x, y) {
         Entity.call(this,entityDef, x, y);
     };
     Hero.prototype = Object.create(Entity.prototype);
     Hero.prototype.constructor = Hero;
+
+    Hero.prototype.draw = function(context) {
+        if (this.entityDef.style.shape === "circle"){
+            context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
+                    -this.radius-1,-this.radius-1,this.radius*2+2,this.radius*2+2); 
+        } else if (this.entityDef.style.shape=="rectangle"){
+            context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
+                    -this.width/2-1,-this.height/2-1,this.width+2,this.height+2);
+        }
+    };
 
     // Villains Class --> Subclass of Entity
     var Villain = function(entityDef, x, y, fullHealth, calories) {
@@ -553,6 +590,17 @@ $(window).load(function() {
     };
     Villain.prototype = Object.create(Entity.prototype);
     Villain.prototype.constructor = Villain;
+
+    Villain.prototype.draw = function(context) {
+        //Entity.prototype.draw.call(this);
+        if (this.entityDef.style.shape === "circle"){
+            context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
+                    -this.radius-1,-this.radius-1,this.radius*2+2,this.radius*2+2); 
+        } else if (this.entityDef.style.shape=="rectangle"){
+            context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
+                    -this.width/2-1,-this.height/2-1,this.width+2,this.height+2);
+        }
+    };
     
     // EntityType Class
     // Define the fixtures parameters of an Entity for the Physic Engine, the url of the image asset and the details on the shape

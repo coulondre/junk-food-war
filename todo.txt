@@ -2,11 +2,17 @@
 * enlever les variables globales relatives à Box2D
 * séparer couche présentation cad manipulation du HTML de la logique du jeux
 * ajouter un debug mode
-* corriger la methode countAssets de la classe Loader
 * reflechir à une strategie avec un sprite avec toutes les images plutot qu'avec des images séparées
 * reflechir à une strategie pour que les URLs des assets ne soient plus en dur dans le json (variable globale pour base_URL, fichier de config ?)
 * écrire une critique du code game.js et un comparatif game.js Vs newgame.js
 * réfléchir au moyen d'avoir un tableau d'EntityDef et un tableau d'entity séparé. Avantage : 1/ plus simple a écrire dans le json 2/ évite de re-créer des entityDef déja existante -> meilleure perf
 * changer le wording "assets" dans la clase level
-* améliorer la methode createEntity qui peux etre largement générisisée
 * DRI : refactor des methodes createRectangle et createCircle de la class Box2DEngine
+* revoir le fonctionnement de Box2D
+* pourquoi background / foreground / slingshot etc... sont traité à part et pas comme des entités ??? -> meilleure utilisation de l'archi de classes + moins de code spécifique en dur
+
+A faire en Priorité pour finir la branche drawing-entities:
+* gérer le loader des images des entités
+* corriger la methode countAssets de la classe Loader
+* améliorer la methode createEntity de la classe Level qui peux etre largement générisisée
+* revoir la possibilité de n'avoir qu'une seule fonction draw générique de l'objet Entity plutôt que des methodes draw specifiques a chaque sous classe
