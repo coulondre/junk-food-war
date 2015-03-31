@@ -188,8 +188,11 @@ $(window).load(function() {
         this.assets = game.gameJSON.levels[number];
         this.entities = [];
         this.mode = "intro";
-        this.slingshotX = 140;
-        this.slingshotY = 280;
+        // the following 4 attributes will be initialize during loadStaticObjects method
+        this.slingshotX;
+        this.slingshotY;
+        this.slingshotFrontX;
+        this.slingshotFrontY;
         this.offsetLeft = 0; // Variable defined for screen panning and parallax
         this.ended = false;
         this.score = 0;
@@ -197,11 +200,11 @@ $(window).load(function() {
         this.minOffset = 0;
         this.maxOffset = 300;
 
-        this.animationFrame; // will be initialize in start() method
-        this.background; // will be initialize in load method
-        this.foreground; // will be initialize in load method
-        this.slingshotImage; // will be initialize in load method
-        this.slingshotFrontImage; // will be initialize in load method
+        this.animationFrame; // Will be initialize in start() method
+        this.background; // Will be initialize in load method
+        this.foreground; // Will be initialize in load method
+        this.slingshotImage; // Will be initialize in load method
+        this.slingshotFrontImage; // Will be initialize in load method
        
     };
 
@@ -217,12 +220,23 @@ $(window).load(function() {
 
     Level.prototype.load = function() {
         $("score").html("Score: " + this.score);
-        // Load the level assets (i.e: background, foreground and slingshot images)
-        this.backgroundImage = this.loader.loadImage(this.assets.background);
-        this.foregroundImage = this.loader.loadImage(this.assets.foreground);
-        this.slingshotImage = this.loader.loadImage(this.assets.slingshotImage);
-        this.slingshotFrontImage = this.loader.loadImage(this.assets.slingshotFrontImage);
+        // Load all the necessary images for the level 
+        this.loadStaticObjects();
         this.createEntities();
+    };
+
+    // Load the statics objects : background, foreground ans slingshotS
+    Level.prototype.loadStaticObjects = function() {
+        this.backgroundImage = this.loader.loadImage(this.assets.background.url);
+        this.foregroundImage = this.loader.loadImage(this.assets.foreground.url);
+        // Initialize the x an y of the slingshot and load the assets
+        this.slingshotX = this.assets.slingshotImage.position.x;
+        this.slingshotY = this.assets.slingshotImage.position.y;
+        this.slingshotImage = this.loader.loadImage(this.assets.slingshotImage.url);
+
+        this.slingshotFrontX = this.assets.slingshotFrontImage.position.x;
+        this.slingshotFrontY = this.assets.slingshotFrontImage.position.y;
+        this.slingshotFrontImage = this.loader.loadImage(this.assets.slingshotFrontImage.url);
     };
 
     // create the entities for the current level and load the associated assets
@@ -301,11 +315,11 @@ $(window).load(function() {
         // Animate the characters
         // TODO
 
-        // Draw the background with parallax scrolling
+        // Draw the statics objects (background, foreground, slingshot) with parallax scrolling
         this.game.context.drawImage(this.backgroundImage, this.offsetLeft/4, 0, 640, 480, 0, 0, 640, 480);
         this.game.context.drawImage(this.foregroundImage, this.offsetLeft, 0, 640, 480, 0, 0, 640, 480);
         this.game.context.drawImage(this.slingshotImage, this.slingshotX - this.offsetLeft, this.slingshotY);
-        this.game.context.drawImage(this.slingshotFrontImage, this.slingshotX - this.offsetLeft, this.slingshotY);
+        this.game.context.drawImage(this.slingshotFrontImage, this.slingshotFrontX - this.offsetLeft, this.slingshotFrontY);
 
         // Draw all the bodies
         this.drawAllBodies();

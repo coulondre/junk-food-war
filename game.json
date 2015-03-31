@@ -1,10 +1,32 @@
 {"response": {
 		"levels": [
 			{
-				"slingshotImage": "images/slingshot.png",
-				"slingshotFrontImage": "images/slingshot-front.png",
-				"foreground": "images/backgrounds/desert-foreground.png",
-				"background": "images/backgrounds/clouds-background.png",
+				"slingshotImage":
+					{	
+						"position":
+						{
+							"x":140,
+							"y":280
+						},
+						"url": "images/slingshot.png"
+					},
+				"slingshotFrontImage":
+					{
+						"position":
+						{
+							"x":140,
+							"y":280
+						},
+						"url": "images/slingshot-front.png"
+					},
+				"foreground":
+					{
+						"url": "images/backgrounds/desert-foreground.png"
+					},
+				"background":
+					{
+						"url": "images/backgrounds/clouds-background.png"
+					},
 				"entities": [
 					{
 						"type": "ground",
