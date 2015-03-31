@@ -129,19 +129,19 @@ $(window).load(function() {
             bodyDef.type = b2Body.b2_dynamicBody;
         }
         
-        bodyDef.position.x = entity.x/this.scale;
-        bodyDef.position.y = entity.y/this.scale;
-        if (entity.angle) {
-            bodyDef.angle = Math.PI*entity.angle/180;
+        bodyDef.position.x = entity.position.x/this.scale;
+        bodyDef.position.y = entity.position.y/this.scale;
+        if (entity.shape.angle) {
+            bodyDef.angle = Math.PI*entity.shape.angle/180;
         }
         
         var fixtureDef = new b2FixtureDef;
-        fixtureDef.density = entity.entityDef.density;
-        fixtureDef.friction = entity.entityDef.friction;
-        fixtureDef.restitution = entity.entityDef.restitution;
+        fixtureDef.density = entity.definition.density;
+        fixtureDef.friction = entity.definition.friction;
+        fixtureDef.restitution = entity.definition.restitution;
 
         fixtureDef.shape = new b2PolygonShape;
-        fixtureDef.shape.SetAsBox(entity.width/2/this.scale,entity.height/2/this.scale);
+        fixtureDef.shape.SetAsBox(entity.shape.width/2/this.scale,entity.shape.height/2/this.scale);
         
         var body = this.world.CreateBody(bodyDef); 
         body.SetUserData(entity);
@@ -158,18 +158,18 @@ $(window).load(function() {
             bodyDef.type = b2Body.b2_dynamicBody;
         }
         
-        bodyDef.position.x = entity.x/this.scale;
-        bodyDef.position.y = entity.y/this.scale;
+        bodyDef.position.x = entity.position.x/this.scale;
+        bodyDef.position.y = entity.position.y/this.scale;
         
-        if (entity.angle) {
-            bodyDef.angle = Math.PI*entity.angle/180;
+        if (entity.shape.angle) {
+            bodyDef.angle = Math.PI*entity.shape.angle/180;
         }           
         var fixtureDef = new b2FixtureDef;
-        fixtureDef.density = entity.entityDef.density;
-        fixtureDef.friction = entity.entityDef.friction;
-        fixtureDef.restitution = entity.entityDef.restitution;
+        fixtureDef.density = entity.definition.density;
+        fixtureDef.friction = entity.definition.friction;
+        fixtureDef.restitution = entity.definition.restitution;
 
-        fixtureDef.shape = new b2CircleShape(entity.radius/this.scale);
+        fixtureDef.shape = new b2CircleShape(entity.shape.radius/this.scale);
         
         var body = this.world.CreateBody(bodyDef); 
         body.SetUserData(entity);
@@ -236,53 +236,50 @@ $(window).load(function() {
 
     // Create an entity
     Level.prototype.createEntity = function(entity) {
-        // create the entityDef of the entity
-        var definition = new EntityDef(entity.entityDef.name, entity.entityDef.density, entity.entityDef.friction, entity.entityDef.restitution, entity.entityDef.url, entity.entityDef.style);
+        // create the definition, i.e: density, friction, restitution of the entity
+        var definition = new EntityDef(entity.definition.name, entity.definition.density, entity.definition.friction, entity.definition.restitution);
         if(!definition){
-            console.log ("Undefined entity name",entity.entityDef.name);
+            console.log ("Undefined entity name",entity.definition.name);
             return;
         }
+        // create the entity based on his type
         switch(entity.type){
-            case "ground": // simple rectangles
-                var ground = new Ground(definition,entity.x,entity.y,entity.width, entity.height);
-                if (entity.entityDef.url != "undefined") {
-                    ground.sprite = this.loader.loadImage(entity.entityDef.url);
-                }
-                this.engine.createRectangle(ground);              
+            case "ground":
+                var newEntity = new Ground(definition, entity.shape, entity.position, entity.url);
+                console.log(newEntity);
+                this.engine.createRectangle(newEntity);              
                 break;  
             case "block":
-                var block = new Block(definition,entity.x,entity.y,entity.width, entity.height,entity.fullHealth,entity.angle);
-                if (entity.entityDef.url != "undefined") {
-                    block.sprite = this.loader.loadImage(entity.entityDef.url);
-                }
-                this.engine.createRectangle(block);           
+                var newEntity = new Block(definition, entity.shape, entity.position,entity.url, entity.fullHealth);
+                console.log(newEntity);
+                this.engine.createRectangle(newEntity);           
                 break;
-            case "hero": // simple circles
-                var hero = new Hero(definition,entity.x,entity.y);
-                hero.radius = definition.style.radius;
-                if (entity.entityDef.url != "undefined") {
-                    hero.sprite = this.loader.loadImage(entity.entityDef.url);
-                }
-                this.engine.createCircle(hero);
+            case "hero":
+                var newEntity = new Hero(definition, entity.shape, entity.position, entity.url);
+                newEntity.radius = entity.shape.radius;
+                console.log(newEntity);
+                this.engine.createCircle(newEntity);
                 break;
             case "villain": // can be circles or rectangles
-                var villain = new Villain(definition,entity.x,entity.y,entity.fullHealth, entity.calories);
-                if (entity.entityDef.url != "undefined") {
-                    villain.sprite = this.loader.loadImage(entity.entityDef.url);
-                }
-                if(definition.style.shape === "circle"){
-                    villain.radius = definition.style.radius;
-                    this.engine.createCircle(villain);                  
-                } else if(definition.style.shape === "rectangle"){
-                    villain.width = definition.style.width;
-                    villain.height = definition.style.height;
-                    this.engine.createRectangle(villain);                   
+                var newEntity = new Villain(definition, entity.shape, entity.position, entity.url, entity.fullHealth, entity.calories);
+                console.log(newEntity);
+                if(entity.shape.type === "circle"){
+                    newEntity.radius = entity.shape.radius;
+                    this.engine.createCircle(newEntity);                  
+                } else if(entity.shape.type === "rectangle"){
+                    newEntity.width = entity.shape.width;
+                    newEntity.height = entity.shape.height;
+                    this.engine.createRectangle(newEntity);                   
                 };
                 break;                          
             default:
                 console.log("Undefined entity type",entity.type);
                 break;
         }
+        // load the image if necessary
+        if (newEntity.toBeDrawn) {
+                    newEntity.sprite = this.loader.loadImage(entity.url);
+                }
     };
 
     Level.prototype.start = function() {
@@ -327,8 +324,8 @@ $(window).load(function() {
         // Iterate through all the bodies and draw them on the canvas
         for (var body = this.engine.world.GetBodyList(); body; body = body.GetNext()) {
             var entity = body.GetUserData();
-            
-            if (entity) {
+    
+            if (entity != null && entity.toBeDrawn) {
                 var position = body.GetPosition();
                 var angle = body.GetAngle();
                 // Translate and rotate the canvas context to the position and angle of the entity
@@ -451,7 +448,7 @@ $(window).load(function() {
     Loader.prototype.countAssets = function() {
         var nbAssets = Object.keys(this.level.assets).length; // Warning this is not compatible w/ IE < IE9+
         // WARNING: BAD CODE, NEED TO BE FIXED
-        this.totalCount = 13;
+        this.totalCount = 12;
     };
 
     Loader.prototype.loadImage = function(url) {
@@ -528,63 +525,68 @@ $(window).load(function() {
     };
 
     // Entity Class
-    var Entity = function(entityDef, x, y) {
-        this.entityDef = entityDef;
-        this.x = x;
-        this.y = y;
-        this.isStatic = false;
+    var Entity = function(definition, shape, position, url) {
+        this.definition = definition;
+        this.shape = shape;
+        this.position = position;
+        this.url = url;
+        this.isStatic = false; // By default an entity is dynamic
+        if (this.url === "undefined") {
+            this.toBeDrawn = false;    
+        } else {
+            this.toBeDrawn = true; // By default an entity will be drawn in the canvas
+        }
         this.sprite; // Will be initialize in method createEntity of class Level
     };
 
+    Entity.prototype.draw = function(context) {
+        if (this.shape.type === "circle"){
+            context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
+                    -this.shape.radius-1,-this.shape.radius-1,this.shape.radius*2+2,this.shape.radius*2+2); 
+        } else if (this.shape.type=="rectangle"){
+            context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
+                    -this.shape.width/2-1,-this.shape.height/2-1,this.shape.width+2,this.shape.height+2);
+        }
+    };
+
     // Ground Class --> Subclass of Entity
-    var Ground = function(entityDef, x, y, width, height) {
-        Entity.call(this,entityDef, x, y);
-        this.width = width;
-        this.height = height;
+    var Ground = function(definition, shape, position, url) {
+        Entity.call(this, definition, shape, position, url);
         this.isStatic = true;
     };
     Ground.prototype = Object.create(Entity.prototype);
     Ground.prototype.constructor = Ground;
 
     Ground.prototype.draw = function(context) {
+        Entity.prototype.draw.call(this, context); // Call the method draw of the super class
     };
 
     // Block Class --> Subclass of Entity
-    var Block = function(entityDef, x, y, width, height, fullHealth, angle) {
-        Entity.call(this,entityDef, x, y);
-        this.width = width;
-        this.height = height;
+    var Block = function(definition, shape, position, url, fullHealth) {
+        Entity.call(this, definition, shape, position, url);
         this.fullHealth = fullHealth;
-        this.angle = angle || "undefined";
     };
     Block.prototype = Object.create(Entity.prototype);
     Block.prototype.constructor = Block;
 
     Block.prototype.draw = function(context) {
-        context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
-                        -this.width/2-1,-this.height/2-1,this.width+2,this.height+2);
+        Entity.prototype.draw.call(this, context); // Call the method draw of the super class
     };
 
     // Hero Class --> Subclass of Entity
-    var Hero = function(entityDef, x, y) {
-        Entity.call(this,entityDef, x, y);
+    var Hero = function(definition, shape, position, url) {
+        Entity.call(this, definition, shape, position, url);
     };
     Hero.prototype = Object.create(Entity.prototype);
     Hero.prototype.constructor = Hero;
 
     Hero.prototype.draw = function(context) {
-        if (this.entityDef.style.shape === "circle"){
-            context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
-                    -this.radius-1,-this.radius-1,this.radius*2+2,this.radius*2+2); 
-        } else if (this.entityDef.style.shape=="rectangle"){
-            context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
-                    -this.width/2-1,-this.height/2-1,this.width+2,this.height+2);
-        }
+        Entity.prototype.draw.call(this, context); // Call the method draw of the super class
     };
 
     // Villains Class --> Subclass of Entity
-    var Villain = function(entityDef, x, y, fullHealth, calories) {
-        Entity.call(this,entityDef, x, y);
+    var Villain = function(definition, shape, position, url, fullHealth, calories) {
+        Entity.call(this, definition, shape, position, url);
         this.fullHealth = fullHealth;
         this.calories = calories;
     };
@@ -592,27 +594,18 @@ $(window).load(function() {
     Villain.prototype.constructor = Villain;
 
     Villain.prototype.draw = function(context) {
-        //Entity.prototype.draw.call(this);
-        if (this.entityDef.style.shape === "circle"){
-            context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
-                    -this.radius-1,-this.radius-1,this.radius*2+2,this.radius*2+2); 
-        } else if (this.entityDef.style.shape=="rectangle"){
-            context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
-                    -this.width/2-1,-this.height/2-1,this.width+2,this.height+2);
-        }
+        Entity.prototype.draw.call(this, context); // Call the method draw of the super class
     };
     
     // EntityType Class
     // Define the fixtures parameters of an Entity for the Physic Engine, the url of the image asset and the details on the shape
     // style = {shape: "rectangle", width:40, height:50}
     // style = {shape: "circle", radius:25}
-    var EntityDef = function(name, density, friction, restitution, url, style) {
+    var EntityDef = function(name, density, friction, restitution) {
         this.name = name;
         this.density = density;
         this.friction = friction;
         this.restitution = restitution;
-        this.url = url;
-        this.style = style || "undefined";
     };
 
     //Main
