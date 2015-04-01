@@ -220,7 +220,7 @@ $(window).load(function() {
 
     Level.prototype.load = function() {
         $("score").html("Score: " + this.score);
-        // Load all the necessary images for the level 
+        // Will create the Box2D object if necessary and load all the necessary images for the level 
         this.loadStaticObjects();
         this.createEntities();
     };
@@ -260,23 +260,19 @@ $(window).load(function() {
         switch(entity.type){
             case "ground":
                 var newEntity = new Ground(definition, entity.shape, entity.position, entity.url);
-                console.log(newEntity);
                 this.engine.createRectangle(newEntity);              
                 break;  
             case "block":
                 var newEntity = new Block(definition, entity.shape, entity.position,entity.url, entity.fullHealth);
-                console.log(newEntity);
                 this.engine.createRectangle(newEntity);           
                 break;
             case "hero":
                 var newEntity = new Hero(definition, entity.shape, entity.position, entity.url);
                 newEntity.radius = entity.shape.radius;
-                console.log(newEntity);
                 this.engine.createCircle(newEntity);
                 break;
             case "villain": // can be circles or rectangles
                 var newEntity = new Villain(definition, entity.shape, entity.position, entity.url, entity.fullHealth, entity.calories);
-                console.log(newEntity);
                 if(entity.shape.type === "circle"){
                     newEntity.radius = entity.shape.radius;
                     this.engine.createCircle(newEntity);                  
@@ -459,10 +455,25 @@ $(window).load(function() {
         this.countAssets();
     };
 
-    Loader.prototype.countAssets = function() {
-        var nbAssets = Object.keys(this.level.assets).length; // Warning this is not compatible w/ IE < IE9+
+    Loader.prototype.countAssets = function() { // This method need to be refactor
+        var currentLevel = this.level.assets;
+
+        var staticObjectsArray = currentLevel.staticObjects;
+        var staticObjectsArrayLength = staticObjectsArray.length;
+        for (var i = 0; i < staticObjectsArrayLength; i++) {
+            if(staticObjectsArray[i].url != "undefined") { this.totalCount++; }
+        };
+        console.log(this.totalCount);
+
+        var entityArray = currentLevel.entities;
+        var entityArrayLength = entityArray.length;
+        for (var i = 0; i < entityArrayLength; i++) {
+            if(entityArray[i].url != "undefined") { this.totalCount++; }
+        };
+        console.log(this.totalCount);
+        /*var nbAssets = Object.keys(this.level.assets).length; // Warning this is not compatible w/ IE < IE9+
         // WARNING: BAD CODE, NEED TO BE FIXED
-        this.totalCount = 12;
+        this.totalCount = 12;*/
     };
 
     Loader.prototype.loadImage = function(url) {

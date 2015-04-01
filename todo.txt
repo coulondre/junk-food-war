@@ -17,3 +17,4 @@ A faire en Priorité pour finir la branche drawing-entities:
 * améliorer la methode createEntity de la classe Level qui peux etre largement générisisée
 * revoir la possibilité de n'avoir qu'une seule fonction draw générique de l'objet Entity plutôt que des methodes draw specifiques a chaque sous classe
 * réflexion: sur quel paramètre s'appuyer pour déterminer si l'entité est à dessiner ou pas
+* virer les tests sur les string "undefined" du code et tester directement sur undefined 

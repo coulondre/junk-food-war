@@ -1,8 +1,9 @@
 {"response": {
 		"levels": [
 			{
-				"slingshotImage":
+				"entities": [
 					{	
+						"type": "slingshotImage", 
 						"position":
 						{
 							"x":140,
@@ -10,8 +11,8 @@
 						},
 						"url": "images/slingshot.png"
 					},
-				"slingshotFrontImage":
 					{
+						"type": "slingshotFrontImage", 
 						"position":
 						{
 							"x":140,
@@ -19,15 +20,14 @@
 						},
 						"url": "images/slingshot-front.png"
 					},
-				"foreground":
 					{
+						"type": "foreground",
 						"url": "images/backgrounds/desert-foreground.png"
 					},
-				"background":
 					{
+						"type": "background", 
 						"url": "images/backgrounds/clouds-background.png"
 					},
-				"entities": [
 					{
 						"type": "ground",
 						"definition":
