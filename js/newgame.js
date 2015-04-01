@@ -220,9 +220,10 @@ $(window).load(function() {
 
     Level.prototype.load = function() {
         $("score").html("Score: " + this.score);
-        // Will create the Box2D object if necessary and load all the necessary images for the level 
-        this.loadStaticObjects();
+        // Create the Box2D object of the corresponding entity if necessary
         this.createEntities();
+        // Load all the necessary images for the level
+        this.loadEntities();
     };
 
     // Load the statics objects : background, foreground ans slingshotS
@@ -239,6 +240,7 @@ $(window).load(function() {
         this.slingshotFrontImage = this.loader.loadImage(this.assets.slingshotFrontImage.url);
     };
 
+
     // create the entities for the current level and load the associated assets
     Level.prototype.createEntities = function() {
         var entitiesProp = this.assets.entities
@@ -251,13 +253,19 @@ $(window).load(function() {
     // Create an entity
     Level.prototype.createEntity = function(entity) {
         // create the definition, i.e: density, friction, restitution of the entity
-        var definition = new EntityDef(entity.definition.name, entity.definition.density, entity.definition.friction, entity.definition.restitution);
-        if(!definition){
-            console.log ("Undefined entity name",entity.definition.name);
-            return;
+        if (entity.definition) {
+            var definition = new EntityDef(entity.definition.name, entity.definition.density, entity.definition.friction, entity.definition.restitution);    
         }
         // create the entity based on his type
         switch(entity.type){
+            case "slingshotImage":
+                this.slingshotX = entity.position.x;
+                this.slingshotY = entity.position.y;
+                break;
+            case "slingshotFrontImage":
+                this.slingshotFrontX = entity.position.x;
+                this.slingshotFrontY = entity.position.y;
+                break;
             case "ground":
                 var newEntity = new Ground(definition, entity.shape, entity.position, entity.url);
                 this.engine.createRectangle(newEntity);              
@@ -286,10 +294,16 @@ $(window).load(function() {
                 console.log("Undefined entity type",entity.type);
                 break;
         }
-        // load the image if necessary
-        if (newEntity.toBeDrawn) {
-                    newEntity.sprite = this.loader.loadImage(entity.url);
+    };
+
+    Level.prototype.loadEntities = function() {
+        for (var body = this.engine.world.GetBodyList(); body; body = body.GetNext()) {
+            var entity = body.GetUserData();
+            // load the image if necessary
+            if (entity.toBeDrawn) {
+                    entity.sprite = this.loader.loadImage(entity.url);
                 }
+        };
     };
 
     Level.prototype.start = function() {
