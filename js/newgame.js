@@ -121,59 +121,36 @@ $(window).load(function() {
         this.world.SetDebugDraw(debugDraw);
     };
 
-    Box2DEngine.prototype.createRectangle = function(entity) {
+    Box2DEngine.prototype.createEntity = function(entity) {
         var bodyDef = new b2BodyDef;
         if(entity.isStatic){
             bodyDef.type = b2Body.b2_staticBody;
         } else {
             bodyDef.type = b2Body.b2_dynamicBody;
         }
-        
+
         bodyDef.position.x = entity.position.x/this.scale;
         bodyDef.position.y = entity.position.y/this.scale;
+
         if (entity.shape.angle) {
             bodyDef.angle = Math.PI*entity.shape.angle/180;
         }
-        
+
         var fixtureDef = new b2FixtureDef;
         fixtureDef.density = entity.definition.density;
         fixtureDef.friction = entity.definition.friction;
         fixtureDef.restitution = entity.definition.restitution;
 
-        fixtureDef.shape = new b2PolygonShape;
-        fixtureDef.shape.SetAsBox(entity.shape.width/2/this.scale,entity.shape.height/2/this.scale);
-        
-        var body = this.world.CreateBody(bodyDef); 
-        body.SetUserData(entity);
-        
-        var fixture = body.CreateFixture(fixtureDef);
-        return body;
-    };
-
-    Box2DEngine.prototype.createCircle = function(entity) {
-        var bodyDef = new b2BodyDef;
-        if(entity.isStatic){
-            bodyDef.type = b2Body.b2_staticBody;
-        } else {
-            bodyDef.type = b2Body.b2_dynamicBody;
+        if (entity.shape.type === "rectangle") {
+            fixtureDef.shape = new b2PolygonShape;
+            fixtureDef.shape.SetAsBox(entity.shape.width/2/this.scale,entity.shape.height/2/this.scale);
+        } else if (entity.shape.type === "circle") {
+            fixtureDef.shape = new b2CircleShape(entity.shape.radius/this.scale);
         }
-        
-        bodyDef.position.x = entity.position.x/this.scale;
-        bodyDef.position.y = entity.position.y/this.scale;
-        
-        if (entity.shape.angle) {
-            bodyDef.angle = Math.PI*entity.shape.angle/180;
-        }           
-        var fixtureDef = new b2FixtureDef;
-        fixtureDef.density = entity.definition.density;
-        fixtureDef.friction = entity.definition.friction;
-        fixtureDef.restitution = entity.definition.restitution;
 
-        fixtureDef.shape = new b2CircleShape(entity.shape.radius/this.scale);
-        
         var body = this.world.CreateBody(bodyDef); 
         body.SetUserData(entity);
-
+        
         var fixture = body.CreateFixture(fixtureDef);
         return body;
     };
@@ -186,25 +163,23 @@ $(window).load(function() {
         this.engine;
         this.number = number;
         this.assets = game.gameJSON.levels[number];
-        this.entities = [];
+        this.graphics = []; // Array of the graphics objects, i.e background, foreground, slingshot
         this.mode = "intro";
-        // the following 4 attributes will be initialize during loadStaticObjects method
-        this.slingshotX;
-        this.slingshotY;
-        this.slingshotFrontX;
-        this.slingshotFrontY;
+        
         this.offsetLeft = 0; // Variable defined for screen panning and parallax
+        this.nbDisplayStates = 3; // Variable defined for ordering the display of the graphics. i.e: the diffrents backgrounds, foregroud and other object
         this.ended = false;
         this.score = 0;
         this.maxSpeed = 3;
         this.minOffset = 0;
         this.maxOffset = 300;
+        this.slingshotX; // we will use slingshotX for the panning
 
         this.animationFrame; // Will be initialize in start() method
-        this.background; // Will be initialize in load method
+        /*this.background; // Will be initialize in load method
         this.foreground; // Will be initialize in load method
         this.slingshotImage; // Will be initialize in load method
-        this.slingshotFrontImage; // Will be initialize in load method
+        this.slingshotFrontImage; // Will be initialize in load method*/
        
     };
 
@@ -220,26 +195,38 @@ $(window).load(function() {
 
     Level.prototype.load = function() {
         $("score").html("Score: " + this.score);
-        // Create the Box2D object of the corresponding entity if necessary
+        // Create all the Graphics object and load the associated images
+        this.createGraphics(); 
+        // Create the Entity objects and the associated Box2D object and then load all the necessary images
         this.createEntities();
-        // Load all the necessary images for the level
-        this.loadEntities();
     };
 
-    // Load the statics objects : background, foreground ans slingshotS
-    Level.prototype.loadStaticObjects = function() {
-        this.backgroundImage = this.loader.loadImage(this.assets.background.url);
-        this.foregroundImage = this.loader.loadImage(this.assets.foreground.url);
-        // Initialize the x an y of the slingshot and load the assets
-        this.slingshotX = this.assets.slingshotImage.position.x;
-        this.slingshotY = this.assets.slingshotImage.position.y;
-        this.slingshotImage = this.loader.loadImage(this.assets.slingshotImage.url);
-
-        this.slingshotFrontX = this.assets.slingshotFrontImage.position.x;
-        this.slingshotFrontY = this.assets.slingshotFrontImage.position.y;
-        this.slingshotFrontImage = this.loader.loadImage(this.assets.slingshotFrontImage.url);
+    // Create and load the graphics objects : background, foreground ans slingshotS
+    Level.prototype.createGraphics = function() {
+        // create and load the graphics and put it in the graphics array of the level
+        var graphics = this.assets.graphics;
+        var graphicsLength = graphics.length;
+        for (var i = 0; i < graphicsLength; i++) {
+            switch(graphics[i].type) {
+                case "slingshot":
+                    var newGraphic = new Slingshot(graphics[i].url, graphics[i].position);
+                    this.slingshotX = newGraphic.position.x;
+                    break;
+                case "foreground":
+                    var newGraphic = new Foreground(graphics[i].url);
+                    break;
+                case "background":
+                    var newGraphic = new Background(graphics[i].url, graphics[i].parallax);
+                    break;
+                default:
+                    console.log("Undefined graphic type",graphics[i].type);
+                    break;
+            }
+            newGraphic.sprite = this.loader.loadImage(newGraphic.url);
+            this.graphics.push(newGraphic);
+        };
+        this.graphics.sort(function(a,b) {return a.displayOrder - b.displayOrder});
     };
-
 
     // create the entities for the current level and load the associated assets
     Level.prototype.createEntities = function() {
@@ -256,54 +243,30 @@ $(window).load(function() {
         if (entity.definition) {
             var definition = new EntityDef(entity.definition.name, entity.definition.density, entity.definition.friction, entity.definition.restitution);    
         }
-        // create the entity based on his type
+        // create the corresponding object
         switch(entity.type){
-            case "slingshotImage":
-                this.slingshotX = entity.position.x;
-                this.slingshotY = entity.position.y;
-                break;
-            case "slingshotFrontImage":
-                this.slingshotFrontX = entity.position.x;
-                this.slingshotFrontY = entity.position.y;
-                break;
             case "ground":
-                var newEntity = new Ground(definition, entity.shape, entity.position, entity.url);
-                this.engine.createRectangle(newEntity);              
+                var newEntity = new Ground(definition, entity.shape, entity.position, entity.url);              
                 break;  
             case "block":
-                var newEntity = new Block(definition, entity.shape, entity.position,entity.url, entity.fullHealth);
-                this.engine.createRectangle(newEntity);           
+                var newEntity = new Block(definition, entity.shape, entity.position,entity.url, entity.fullHealth);        
                 break;
             case "hero":
                 var newEntity = new Hero(definition, entity.shape, entity.position, entity.url);
-                newEntity.radius = entity.shape.radius;
-                this.engine.createCircle(newEntity);
                 break;
             case "villain": // can be circles or rectangles
                 var newEntity = new Villain(definition, entity.shape, entity.position, entity.url, entity.fullHealth, entity.calories);
-                if(entity.shape.type === "circle"){
-                    newEntity.radius = entity.shape.radius;
-                    this.engine.createCircle(newEntity);                  
-                } else if(entity.shape.type === "rectangle"){
-                    newEntity.width = entity.shape.width;
-                    newEntity.height = entity.shape.height;
-                    this.engine.createRectangle(newEntity);                   
-                };
                 break;                          
             default:
                 console.log("Undefined entity type",entity.type);
                 break;
         }
-    };
-
-    Level.prototype.loadEntities = function() {
-        for (var body = this.engine.world.GetBodyList(); body; body = body.GetNext()) {
-            var entity = body.GetUserData();
-            // load the image if necessary
-            if (entity.toBeDrawn) {
-                    entity.sprite = this.loader.loadImage(entity.url);
+        // create the entity based on his type and the associated physic engine object
+        this.engine.createEntity(newEntity);
+        // Load the image if necessary
+        if (newEntity.url) {
+                    newEntity.sprite = this.loader.loadImage(newEntity.url);
                 }
-        };
     };
 
     Level.prototype.start = function() {
@@ -321,16 +284,10 @@ $(window).load(function() {
     Level.prototype.animate = function() {
         // Animate the background
         this.handlePanning();
-
         // Animate the characters
         // TODO
-
         // Draw the statics objects (background, foreground, slingshot) with parallax scrolling
-        this.game.context.drawImage(this.backgroundImage, this.offsetLeft/4, 0, 640, 480, 0, 0, 640, 480);
-        this.game.context.drawImage(this.foregroundImage, this.offsetLeft, 0, 640, 480, 0, 0, 640, 480);
-        this.game.context.drawImage(this.slingshotImage, this.slingshotX - this.offsetLeft, this.slingshotY);
-        this.game.context.drawImage(this.slingshotFrontImage, this.slingshotFrontX - this.offsetLeft, this.slingshotFrontY);
-
+        this.drawAllGraphics();
         // Draw all the bodies
         this.drawAllBodies();
 
@@ -342,6 +299,14 @@ $(window).load(function() {
         }
     };
 
+    Level.prototype.drawAllGraphics = function() {
+        var graphics = this.graphics;
+        var graphicsLength = graphics.length;
+        for (var i = 0; i < graphicsLength; i++) {
+            graphics[i].draw(this.game.context, this.offsetLeft);
+        };
+    };
+
     Level.prototype.drawAllBodies = function() {
         this.engine.world.DrawDebugData();
 
@@ -349,7 +314,7 @@ $(window).load(function() {
         for (var body = this.engine.world.GetBodyList(); body; body = body.GetNext()) {
             var entity = body.GetUserData();
     
-            if (entity != null && entity.toBeDrawn) {
+            if (entity != null && entity.url) {
                 var position = body.GetPosition();
                 var angle = body.GetAngle();
                 // Translate and rotate the canvas context to the position and angle of the entity
@@ -469,25 +434,20 @@ $(window).load(function() {
         this.countAssets();
     };
 
-    Loader.prototype.countAssets = function() { // This method need to be refactor
-        var currentLevel = this.level.assets;
-
-        var staticObjectsArray = currentLevel.staticObjects;
-        var staticObjectsArrayLength = staticObjectsArray.length;
-        for (var i = 0; i < staticObjectsArrayLength; i++) {
-            if(staticObjectsArray[i].url != "undefined") { this.totalCount++; }
+    Loader.prototype.countAssets = function() {
+        var level = this.level.assets;
+        // count the number of graphics to load
+        var graphicsArray = level.graphics;
+        var graphicsArrayLength = graphicsArray.length;
+        for (var i = 0; i < graphicsArrayLength; i++) {
+            if(graphicsArray[i].url != undefined) { this.totalCount++; }
         };
-        console.log(this.totalCount);
-
-        var entityArray = currentLevel.entities;
+        // count the number of entities to load
+        var entityArray = level.entities;
         var entityArrayLength = entityArray.length;
         for (var i = 0; i < entityArrayLength; i++) {
-            if(entityArray[i].url != "undefined") { this.totalCount++; }
+            if(entityArray[i].url != undefined) { this.totalCount++; }
         };
-        console.log(this.totalCount);
-        /*var nbAssets = Object.keys(this.level.assets).length; // Warning this is not compatible w/ IE < IE9+
-        // WARNING: BAD CODE, NEED TO BE FIXED
-        this.totalCount = 12;*/
     };
 
     Loader.prototype.loadImage = function(url) {
@@ -563,18 +523,62 @@ $(window).load(function() {
         ev.data.dragging = false;
     };
 
+    // Graphic Class
+    // A Graphic object is an object that will not be represented in the physic engine, i.e: background, foreground, slingshot
+    var Graphic = function(url) {
+        this.url = url;
+        this.sprite;
+        this.displayOrder;
+    };
+
+    Graphic.prototype.draw = function(context) {
+
+    };
+
+    var Slingshot = function(url, position) {
+        Graphic.call(this, url);
+        this.position = position;
+        this.displayOrder = 3;
+    };
+    Slingshot.prototype = Object.create(Graphic.prototype);
+    Slingshot.prototype.constructor = Slingshot;
+
+    Slingshot.prototype.draw = function(context, offsetLeft) {
+        context.drawImage(this.sprite, this.position.x - offsetLeft, this.position.y);
+    };
+
+    var Foreground = function(url) {
+        Graphic.call(this, url);
+        this.displayOrder = 2;
+    };
+    Foreground.prototype = Object.create(Graphic.prototype);
+    Foreground.prototype.constructor = Foreground;
+
+    Foreground.prototype.draw = function(context, offsetLeft) {
+        context.drawImage(this.sprite, offsetLeft, 0, 640, 480, 0, 0, 640, 480);
+    };
+
+    var Background = function(url, parallax) {
+        Graphic.call(this, url);
+        this.parallax = parallax;
+        this.displayOrder = 1;
+    };
+    Background.prototype = Object.create(Graphic.prototype);
+    Background.prototype.constructor = Background;
+
+    Background.prototype.draw = function(context, offsetLeft) {
+        context.drawImage(this.sprite, offsetLeft/this.parallax, 0, 640, 480, 0, 0, 640, 480);
+    };
+
     // Entity Class
+    // An Entity object is an object that will be represented in the physic engine. It means that this object
+    // will have a physic definition (density, friction, restitution) associated with him.
     var Entity = function(definition, shape, position, url) {
         this.definition = definition;
         this.shape = shape;
         this.position = position;
-        this.url = url;
+        this.url = url || undefined;
         this.isStatic = false; // By default an entity is dynamic
-        if (this.url === "undefined") {
-            this.toBeDrawn = false;    
-        } else {
-            this.toBeDrawn = true; // By default an entity will be drawn in the canvas
-        }
         this.sprite; // Will be initialize in method createEntity of class Level
     };
 
@@ -649,6 +653,5 @@ $(window).load(function() {
 
     //Main
     var game = new Game();
-    //game.jsonLoad(jsonURL);
     game.init(jsonURL);
 });

@@ -1,9 +1,9 @@
 {"response": {
 		"levels": [
 			{
-				"staticObjects": [
+				"graphics": [
 					{	
-							"type": "slingshotImage", 
+							"type": "slingshot", 
 							"position":
 							{
 								"x":140,
@@ -12,7 +12,7 @@
 							"url": "images/slingshot.png"
 						},
 						{
-							"type": "slingshotFrontImage", 
+							"type": "slingshot", 
 							"position":
 							{
 								"x":140,
@@ -26,8 +26,9 @@
 						},
 						{
 							"type": "background", 
+							"parallax":4,
 							"url": "images/backgrounds/clouds-background.png"
-						},
+						}
 				],
 				"entities": [
 					{
@@ -49,8 +50,7 @@
 						{
 							"x":500,
 							"y":440
-						},
-						"url": "undefined"
+						}
 					},
 					{
 						"type": "ground",
@@ -71,8 +71,7 @@
 						{
 							"x":185,
 							"y":390
-						},
-						"url":"undefined"
+						}
 					},
 					{
 						"type": "block",
