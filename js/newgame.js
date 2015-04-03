@@ -178,6 +178,8 @@ $(window).load(function() {
         this.number = number;
         this.assets = game.gameJSON.levels[number];
         this.graphics = []; // Array of the graphics objects, i.e background, foreground, slingshot
+        this.heroes = []; // Array of the heroes of the level
+        this.villains = []; // Array of the villains of the level
         this.mode = "intro";
         
         this.offsetLeft = 0; // Variable defined for screen panning and parallax
@@ -188,9 +190,11 @@ $(window).load(function() {
         this.minOffset = 0;
         this.maxOffset = 300;
         this.lastUpdateTime; // will be initialized in the animate method
-        this.slingshotX; // we will use slingshotX for the panning
+        this.startX; // startX will be the starting point of the panning
 
         this.animationFrame; // Will be initialize in start() method
+
+        this.currentHero;
         /*this.background; // Will be initialize in load method
         this.foreground; // Will be initialize in load method
         this.slingshotImage; // Will be initialize in load method
@@ -225,7 +229,7 @@ $(window).load(function() {
             switch(graphics[i].type) {
                 case "slingshot":
                     var newGraphic = new Slingshot(graphics[i].url, graphics[i].position);
-                    this.slingshotX = newGraphic.position.x;
+                    this.startX = newGraphic.position.x;
                     break;
                 case "foreground":
                     var newGraphic = new Foreground(graphics[i].url);
@@ -350,6 +354,20 @@ $(window).load(function() {
         };
     };
 
+    Level.prototype.countHeroesAndVillains = function() {
+        // Iterate through all the bodies and draw them on the canvas
+        for (var body = this.engine.world.GetBodyList(); body; body = body.GetNext()) {
+            var entity = body.GetUserData();
+            if(entity) {
+                if(entity.type === "Hero") {
+                    this.heroes.push(body);
+                } else if (entity.type === "Villain") {
+                    this.villains.push(body);
+                }
+            }
+        };
+    };
+
     // panTo function pans the screen to a given x coordinate and returns true if the coordinate
     // is near the center of the screen or if the screen has panned to the extreme left or right.
     // It also caps the panning speed using maxSpeed so that the panning never become too fast
@@ -385,22 +403,42 @@ $(window).load(function() {
 
         if(this.mode === "wait-for-firing"){
             if (this.mouse.dragging){
-                this.panTo(this.mouse.x + this.offsetLeft)
+                this.panTo(this.mouse.x + this.offsetLeft);
             } else {
-                this.panTo(this.slingshotX);
+                this.panTo(this.startX);
             }
         }
         
         if (this.mode === "load-next-hero"){
-            // TODO: 
+            this.countHeroesAndVillains();
             // Check if any villains are alive, if not, end the level (success)
+            if (this.villains.length === 0){
+                this.mode = "level-success";
+                return;
+            }
             // Check if there are any more heroes left to load, if not end the level (failure)
+            if (this.heroes.length === 0){
+                this.mode = "level-failure" 
+                return;     
+            }
             // Load the hero and set mode to wait-for-firing
-            this.mode = "wait-for-firing";            
+            if(!this.currentHero){
+                this.currentHero = this.heroes[this.heroes.length-1];
+                this.currentHero.SetPosition({x:180/this.engine.scale,y:200/this.engine.scale});
+                this.currentHero.SetLinearVelocity({x:0,y:0});
+                this.currentHero.SetAngularVelocity(0);
+                this.currentHero.SetAwake(true);                
+            } else {
+                // Wait for hero to stop bouncing and fall asleep and then switch to wait-for-firing
+                this.panTo(this.startX);
+                if(!this.currentHero.IsAwake()){
+                    this.mode = "wait-for-firing";
+                }
+            }
         }
         
         if(this.mode === "firing"){  
-            this.panTo(this.slingshotX);
+            this.panTo(this.startX);
         }
         
         if (this.mode === "fired"){
@@ -600,6 +638,7 @@ $(window).load(function() {
         this.url = url || undefined;
         this.isStatic = false; // By default an entity is dynamic
         this.sprite; // Will be initialize in method createEntity of class Level
+        this.type = "Entity";
     };
 
     // Note: Box2D create a "skin" around polygons. The skin is used in staking scenarios to keep polygons
@@ -620,6 +659,7 @@ $(window).load(function() {
     var Ground = function(definition, shape, position, url) {
         Entity.call(this, definition, shape, position, url);
         this.isStatic = true;
+        this.type = "Ground";
     };
     Ground.prototype = Object.create(Entity.prototype);
     Ground.prototype.constructor = Ground;
@@ -632,6 +672,7 @@ $(window).load(function() {
     var Block = function(definition, shape, position, url, fullHealth) {
         Entity.call(this, definition, shape, position, url);
         this.fullHealth = fullHealth;
+        this.type = "Block";
     };
     Block.prototype = Object.create(Entity.prototype);
     Block.prototype.constructor = Block;
@@ -643,6 +684,7 @@ $(window).load(function() {
     // Hero Class --> Subclass of Entity
     var Hero = function(definition, shape, position, url) {
         Entity.call(this, definition, shape, position, url);
+        this.type = "Hero";
     };
     Hero.prototype = Object.create(Entity.prototype);
     Hero.prototype.constructor = Hero;
@@ -656,6 +698,7 @@ $(window).load(function() {
         Entity.call(this, definition, shape, position, url);
         this.fullHealth = fullHealth;
         this.calories = calories;
+        this.type = "Villain";
     };
     Villain.prototype = Object.create(Entity.prototype);
     Villain.prototype.constructor = Villain;
