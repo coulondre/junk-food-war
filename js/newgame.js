@@ -155,6 +155,10 @@ $(window).load(function() {
         return body;
     };
 
+    Box2DEngine.prototype.step = function() {
+
+    };
+
     // Level Class
     var Level = function(number, game) {
         this.game = game;
@@ -532,7 +536,6 @@ $(window).load(function() {
     };
 
     Graphic.prototype.draw = function(context) {
-
     };
 
     var Slingshot = function(url, position) {
@@ -582,6 +585,10 @@ $(window).load(function() {
         this.sprite; // Will be initialize in method createEntity of class Level
     };
 
+    // Note: Box2D create a "skin" around polygons. The skin is used in staking scenarios to keep polygons
+    // slightly separated. This allows continuous collision to work against the core polygon. When drawing
+    // Box2D objects, we need to compensate for this extra skin by drawing bodies slightly larger than their actual
+    // dimensions; otherwise, stacked objects wil have unexplained gaps between them
     Entity.prototype.draw = function(context) {
         if (this.shape.type === "circle"){
             context.drawImage(this.sprite,0,0,this.sprite.width,this.sprite.height,
