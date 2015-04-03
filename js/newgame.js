@@ -155,8 +155,18 @@ $(window).load(function() {
         return body;
     };
 
-    Box2DEngine.prototype.step = function() {
-
+    // As per the Box2D manual recommendation:
+    // 1/ we should use a fixed time step because variable time steps are hard to debug
+    // 2/ Box2D work best with a time step around 1/60 and no larger than 1/30 because if
+    //    time step becomes very large Box2D starts having problems with collision
+    // 3/ values of 8 and 3 for velocity and position iterations
+    Box2DEngine.prototype.step = function(timeStep) {
+        // velocity iterations = 8
+        // position iterations = 3
+        if (timeStep > 1/30) {
+            timeStep= 1/30;
+        }
+        this.world.Step(timeStep,8,3);
     };
 
     // Level Class
@@ -177,6 +187,7 @@ $(window).load(function() {
         this.maxSpeed = 3;
         this.minOffset = 0;
         this.maxOffset = 300;
+        this.lastUpdateTime; // will be initialized in the animate method
         this.slingshotX; // we will use slingshotX for the panning
 
         this.animationFrame; // Will be initialize in start() method
@@ -289,7 +300,13 @@ $(window).load(function() {
         // Animate the background
         this.handlePanning();
         // Animate the characters
-        // TODO
+        var currentTime = new Date().getTime();
+        var timeStep;
+        if (this.lastUpdateTime) {
+            timeStep = (currentTime - this.lastUpdateTime)/1000;
+            this.engine.step(timeStep);
+        }
+        this.lastUpdateTime = currentTime;
         // Draw the statics objects (background, foreground, slingshot) with parallax scrolling
         this.drawAllGraphics();
         // Draw all the bodies
