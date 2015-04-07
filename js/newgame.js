@@ -119,6 +119,30 @@ $(window).load(function() {
         debugDraw.SetLineThickness(1.0);
         debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);    
         this.world.SetDebugDraw(debugDraw);
+
+        // listener for world collisions damage
+        var listener = new Box2D.Dynamics.b2ContactListener;
+        listener.PostSolve = function(contact,impulse){
+            var body1 = contact.GetFixtureA().GetBody();
+            var body2 = contact.GetFixtureB().GetBody();
+            var entity1 = body1.GetUserData();
+            var entity2 = body2.GetUserData();
+
+            var impulseAlongNormal = Math.abs(impulse.normalImpulses[0]);
+            // This listener is called a little too often. Filter out very tiny impulses.
+            // After trying different values, 5 seems to work well 
+            if(impulseAlongNormal>5){
+                // If objects have a health, reduce health by the impulse value             
+                if (entity1.health){
+                    entity1.health -= impulseAlongNormal;
+                }   
+
+                if (entity2.health){
+                    entity2.health -= impulseAlongNormal;
+                }
+            } 
+        };
+        this.world.SetContactListener(listener);
     };
 
     Box2DEngine.prototype.createEntity = function(entity) {
@@ -296,7 +320,7 @@ $(window).load(function() {
                 }
     };
 
-        Level.prototype.InitHeroesAndVillains = function() {
+    Level.prototype.InitHeroesAndVillains = function() {
         // Iterate through all the bodies and draw them on the canvas
         for (var body = this.engine.world.GetBodyList(); body; body = body.GetNext()) {
             var entity = body.GetUserData();
@@ -364,14 +388,25 @@ $(window).load(function() {
             if (entity != null && entity.url) {
                 var position = body.GetPosition();
                 var angle = body.GetAngle();
-                // Translate and rotate the canvas context to the position and angle of the entity
-                this.game.context.translate(position.x*this.engine.scale-this.offsetLeft, position.y*this.engine.scale);
-                this.game.context.rotate(angle);
-                // Draw the entity
-                entity.draw(this.game.context);
-                // Translate and rotate the context back to the original position
-                this.game.context.rotate(-angle);
-                this.game.context.translate(-position.x*this.engine.scale+this.offsetLeft, -position.y*this.engine.scale);
+                // Test if the entity should be drawn or destroyed
+                var entityX = position.x*this.engine.scale;
+                if (entityX < 0 || entityX > this.maxWidth || entity.health < 0) {
+                    this.engine.world.DestroyBody(body);
+                    if (entity.type === "Villain"){
+                        this.score += entity.calories;
+                        $('#score').html('Score: '+this.score);
+                        this.villains.pop();
+                    }
+                } else {
+                    // Translate and rotate the canvas context to the position and angle of the entity
+                    this.game.context.translate(position.x*this.engine.scale-this.offsetLeft, position.y*this.engine.scale);
+                    this.game.context.rotate(angle);
+                    // Draw the entity
+                    entity.draw(this.game.context);
+                    // Translate and rotate the context back to the original position
+                    this.game.context.rotate(-angle);
+                    this.game.context.translate(-position.x*this.engine.scale+this.offsetLeft, -position.y*this.engine.scale);
+                }
             }
         };
     };
@@ -440,13 +475,11 @@ $(window).load(function() {
         if (this.mode === "load-next-hero"){
             // Check if any villains are alive, if not, end the level (success)
             if (this.villains.length === 0){
-                console.log("prout villains");
                 this.mode = "level-success";
                 return;
             }
             // Check if there are any more heroes left to load, if not end the level (failure)
             if (this.heroes.length === 0){
-                console.log("prout heroes");
                 this.mode = "level-failure" 
                 return;     
             }
@@ -508,7 +541,7 @@ $(window).load(function() {
 
     Level.prototype.showEndingScreen = function() {
         if (this.mode === "level-success"){
-            if(this.number < this.gameJSON.levels.length-1){
+            if(this.number < this.game.gameJSON.levels.length-1){
                 $("#endingmessage").html("Level Complete. Well Done!!!");
                 $("#playnextlevel").show();
             } else {
@@ -758,7 +791,7 @@ $(window).load(function() {
     // Villains Class --> Subclass of Entity
     var Villain = function(definition, shape, position, url, fullHealth, calories) {
         Entity.call(this, definition, shape, position, url);
-        this.fullHealth = fullHealth;
+        this.health = fullHealth;
         this.calories = calories;
         this.type = "Villain";
     };
