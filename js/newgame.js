@@ -368,6 +368,22 @@ $(window).load(function() {
         };
     };
 
+    // This method calculate the distance between the current hero center
+    // and the mouse location and compares it with the radius of the current hero
+    // to check if the mouse is positioned over the hero.
+    // WARNING : we can get away with using this simple check since all our heros
+    // are circular. If we want to implement heroes with differents shapes we will need
+    // to change this method 
+    Level.prototype.mouseOnCurrentHero = function() {
+        if(!this.currentHero) {
+            return false;
+        }
+        var position = this.currentHero.GetPosition();
+        var distanceSquared = Math.pow(position.x*this.engine.scale - this.mouse.x-this.offsetLeft,2) + Math.pow(position.y*this.engine.scale - this.mouse.y,2);
+        var radiusSquared = Math.pow(this.currentHero.GetUserData().radius,2);
+        return(distanceSquared <= radiusSquared);
+    };
+
     // panTo function pans the screen to a given x coordinate and returns true if the coordinate
     // is near the center of the screen or if the screen has panned to the extreme left or right.
     // It also caps the panning speed using maxSpeed so that the panning never become too fast
@@ -403,7 +419,11 @@ $(window).load(function() {
 
         if(this.mode === "wait-for-firing"){
             if (this.mouse.dragging){
-                this.panTo(this.mouse.x + this.offsetLeft);
+                if (this.mouseOnCurrentHero()) {
+                    this.mode = "firing";
+                } else {
+                    this.panTo(this.mouse.x + this.offsetLeft);
+                }
             } else {
                 this.panTo(this.startX);
             }
@@ -422,6 +442,7 @@ $(window).load(function() {
                 return;     
             }
             // Load the hero and set mode to wait-for-firing
+            // to refactor
             if(!this.currentHero){
                 this.currentHero = this.heroes[this.heroes.length-1];
                 this.currentHero.SetPosition({x:180/this.engine.scale,y:200/this.engine.scale});
