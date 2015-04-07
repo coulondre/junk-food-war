@@ -191,6 +191,9 @@ $(window).load(function() {
         this.maxOffset = 300;
         this.lastUpdateTime; // will be initialized in the animate method
         this.startX; // startX will be the starting point of the panning
+        this.slingshotX;
+        this.slingshotY;
+        this.maxWidth; //after this width the elements will be out of bounds
 
         this.animationFrame; // Will be initialize in start() method
 
@@ -230,6 +233,8 @@ $(window).load(function() {
                 case "slingshot":
                     var newGraphic = new Slingshot(graphics[i].url, graphics[i].position);
                     this.startX = newGraphic.position.x;
+                    this.slingshotX = this.startX;
+                    this.slingshotY = newGraphic.position.y;
                     break;
                 case "foreground":
                     var newGraphic = new Foreground(graphics[i].url);
@@ -243,6 +248,7 @@ $(window).load(function() {
             }
             newGraphic.sprite = this.loader.loadImage(newGraphic.url);
             this.graphics.push(newGraphic);
+            if (newGraphic.type === "Foreground") { this.maxWidth = newGraphic.sprite.width; }
         };
         this.graphics.sort(function(a,b) {return a.displayOrder - b.displayOrder});
     };
@@ -375,12 +381,17 @@ $(window).load(function() {
     // are circular. If we want to implement heroes with differents shapes we will need
     // to change this method 
     Level.prototype.mouseOnCurrentHero = function() {
+        console.log("prout");
         if(!this.currentHero) {
             return false;
         }
         var position = this.currentHero.GetPosition();
+        console.log(position);
         var distanceSquared = Math.pow(position.x*this.engine.scale - this.mouse.x-this.offsetLeft,2) + Math.pow(position.y*this.engine.scale - this.mouse.y,2);
-        var radiusSquared = Math.pow(this.currentHero.GetUserData().radius,2);
+        console.log(distanceSquared);
+        var radiusSquared = Math.pow(this.currentHero.GetUserData().shape.radius,2);
+        console.log(this.currentHero.GetUserData());
+        console.log(radiusSquared);
         return(distanceSquared <= radiusSquared);
     };
 
@@ -411,12 +422,12 @@ $(window).load(function() {
     };
 
     Level.prototype.handlePanning = function() {
-        if(this.mode === "intro"){        
+       if(this.mode === "intro"){        
             if(this.panTo(700)){
                 this.mode = "load-next-hero";
             }             
-        }       
-
+        }     
+        
         if(this.mode === "wait-for-firing"){
             if (this.mouse.dragging){
                 if (this.mouseOnCurrentHero()) {
@@ -448,7 +459,7 @@ $(window).load(function() {
                 this.currentHero.SetPosition({x:180/this.engine.scale,y:200/this.engine.scale});
                 this.currentHero.SetLinearVelocity({x:0,y:0});
                 this.currentHero.SetAngularVelocity(0);
-                this.currentHero.SetAwake(true);                
+                this.currentHero.SetAwake(true);       
             } else {
                 // Wait for hero to stop bouncing and fall asleep and then switch to wait-for-firing
                 this.panTo(this.startX);
@@ -458,13 +469,34 @@ $(window).load(function() {
             }
         }
         
-        if(this.mode === "firing"){  
-            this.panTo(this.startX);
+        if(this.mode === "firing"){
+            if (this.mouse.down) {
+                this.panTo(this.startX);
+                this.currentHero.SetPosition({x:(this.mouse.x+this.offsetLeft)/this.engine.scale,y:this.mouse.y/this.engine.scale});
+            } else {
+                this.mode = "fired";
+                var impulseScaleFactor = 0.75;
+                // Coordinates of center of slingshot (where the band is tied to slingshot)
+                var slingshotCenterX = this.slingshotX + 35;
+                var slingshotCenterY = this.slingshotY + 25;
+                var impulse = new b2Vec2((slingshotCenterX - this.mouse.x - this.offsetLeft)*impulseScaleFactor,(slingshotCenterY - this.mouse.y)*impulseScaleFactor);
+                this.currentHero.ApplyImpulse(impulse,this.currentHero.GetWorldCenter());
+            }
         }
         
         if (this.mode === "fired"){
-            // TODO:
             // Pan to wherever the hero currently is
+            var heroX = this.currentHero.GetPosition().x*this.engine.scale;
+            this.panTo(heroX);
+
+            //and wait till he stops moving  or is out of bounds 
+            if(!this.currentHero.IsAwake() || heroX < 0 || heroX > this.maxWidth ){
+                // then delete the old hero
+                this.engine.world.DestroyBody(this.currentHero);
+                this.currentHero = undefined;
+                // and load next hero
+                this.mode = "load-next-hero";
+            }
         }
     };
 
@@ -618,6 +650,7 @@ $(window).load(function() {
         Graphic.call(this, url);
         this.position = position;
         this.displayOrder = 3;
+        this.type = "Slingshot";
     };
     Slingshot.prototype = Object.create(Graphic.prototype);
     Slingshot.prototype.constructor = Slingshot;
@@ -629,6 +662,7 @@ $(window).load(function() {
     var Foreground = function(url) {
         Graphic.call(this, url);
         this.displayOrder = 2;
+        this.type = "Foreground";
     };
     Foreground.prototype = Object.create(Graphic.prototype);
     Foreground.prototype.constructor = Foreground;
@@ -641,6 +675,7 @@ $(window).load(function() {
         Graphic.call(this, url);
         this.parallax = parallax;
         this.displayOrder = 1;
+        this.type = "Background";
     };
     Background.prototype = Object.create(Graphic.prototype);
     Background.prototype.constructor = Background;
