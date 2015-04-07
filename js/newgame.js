@@ -221,6 +221,8 @@ $(window).load(function() {
         this.createGraphics(); 
         // Create the Entity objects and the associated Box2D object and then load all the necessary images
         this.createEntities();
+        // Initialize the Heroes and Villains array of the level
+        this.InitHeroesAndVillains();
     };
 
     // Create and load the graphics objects : background, foreground ans slingshotS
@@ -294,6 +296,20 @@ $(window).load(function() {
                 }
     };
 
+        Level.prototype.InitHeroesAndVillains = function() {
+        // Iterate through all the bodies and draw them on the canvas
+        for (var body = this.engine.world.GetBodyList(); body; body = body.GetNext()) {
+            var entity = body.GetUserData();
+            if(entity) {
+                if(entity.type === "Hero") {
+                    this.heroes.push(body);
+                } else if (entity.type === "Villain") {
+                    this.villains.push(body);
+                }
+            }
+        };
+    };
+
     Level.prototype.start = function() {
         $('.gamelayer').hide();
         // Display the game canvas and score 
@@ -360,20 +376,6 @@ $(window).load(function() {
         };
     };
 
-    Level.prototype.countHeroesAndVillains = function() {
-        // Iterate through all the bodies and draw them on the canvas
-        for (var body = this.engine.world.GetBodyList(); body; body = body.GetNext()) {
-            var entity = body.GetUserData();
-            if(entity) {
-                if(entity.type === "Hero") {
-                    this.heroes.push(body);
-                } else if (entity.type === "Villain") {
-                    this.villains.push(body);
-                }
-            }
-        };
-    };
-
     // This method calculate the distance between the current hero center
     // and the mouse location and compares it with the radius of the current hero
     // to check if the mouse is positioned over the hero.
@@ -381,17 +383,12 @@ $(window).load(function() {
     // are circular. If we want to implement heroes with differents shapes we will need
     // to change this method 
     Level.prototype.mouseOnCurrentHero = function() {
-        console.log("prout");
         if(!this.currentHero) {
             return false;
         }
         var position = this.currentHero.GetPosition();
-        console.log(position);
         var distanceSquared = Math.pow(position.x*this.engine.scale - this.mouse.x-this.offsetLeft,2) + Math.pow(position.y*this.engine.scale - this.mouse.y,2);
-        console.log(distanceSquared);
         var radiusSquared = Math.pow(this.currentHero.GetUserData().shape.radius,2);
-        console.log(this.currentHero.GetUserData());
-        console.log(radiusSquared);
         return(distanceSquared <= radiusSquared);
     };
 
@@ -441,14 +438,15 @@ $(window).load(function() {
         }
         
         if (this.mode === "load-next-hero"){
-            this.countHeroesAndVillains();
             // Check if any villains are alive, if not, end the level (success)
             if (this.villains.length === 0){
+                console.log("prout villains");
                 this.mode = "level-success";
                 return;
             }
             // Check if there are any more heroes left to load, if not end the level (failure)
             if (this.heroes.length === 0){
+                console.log("prout heroes");
                 this.mode = "level-failure" 
                 return;     
             }
@@ -495,12 +493,13 @@ $(window).load(function() {
                 this.engine.world.DestroyBody(this.currentHero);
                 this.currentHero = undefined;
                 // and load next hero
+                this.heroes.pop();
                 this.mode = "load-next-hero";
             }
         }
 
-        if(this.mode === "level-success" || game.mode === "level-failure"){       
-            if(game.panTo(0)){
+        if(this.mode === "level-success" || this.mode === "level-failure"){       
+            if(this.panTo(0)){
                 this.ended = true;                  
                 this.showEndingScreen();
             }            
