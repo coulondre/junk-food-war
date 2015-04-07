@@ -498,6 +498,13 @@ $(window).load(function() {
                 this.mode = "load-next-hero";
             }
         }
+
+        if(this.mode === "level-success" || game.mode === "level-failure"){       
+            if(game.panTo(0)){
+                this.ended = true;                  
+                this.showEndingScreen();
+            }            
+        }
     };
 
     Level.prototype.showEndingScreen = function() {
