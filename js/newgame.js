@@ -453,7 +453,7 @@ $(window).load(function() {
         // Draw line back to top of slingshot (the front side)
         this.game.context.lineTo(this.slingshotX - this.offsetLeft + 10, this.slingshotY + 30);
         this.game.context.stroke();
-    }
+    };
 
     // This method calculate the distance between the current hero center
     // and the mouse location and compares it with the radius of the current hero
@@ -577,7 +577,7 @@ $(window).load(function() {
 
         if(this.mode === "level-success" || this.mode === "level-failure"){       
             if(this.panTo(0)){
-                this.ended = true;                  
+                this.ended = true;
                 this.showEndingScreen();
             }            
         }
@@ -595,8 +595,26 @@ $(window).load(function() {
         } else if (this.mode === "level-failure"){          
             $("#endingmessage").html("Failed. Play Again?");
             $("#playnextlevel").hide();
-        }       
-        $('#endingscreen').show();
+        }
+        $("#endingscreen").show();
+        var self = this;  
+        $("#showlevelscreen").on("click", function() {
+            self.game.showLevelScreen();
+        });
+        $("#playcurrentlevel").on("click", function() {
+            self.startLevel(self.number);
+        });
+        $("#playnextlevel").on("click", function() {
+            self.startLevel(self.number + 1);
+        });
+    };
+
+    Level.prototype.startLevel = function(number) {
+        window.cancelAnimationFrame(this.animationFrame);       
+        this.lastUpdateTime = undefined;
+        this.currentLevel = new Level(number, this.game);
+        this.currentLevel.init();
+        //this.load(number);
     };
 
     // Loader Class
