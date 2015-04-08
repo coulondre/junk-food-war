@@ -361,6 +361,10 @@ $(window).load(function() {
         this.drawAllGraphics();
         // Draw all the bodies
         this.drawAllBodies();
+        // Draw the band when we are firing a hero 
+        if(this.mode === "wait-for-firing" || this.mode === "firing"){  
+            this.drawSlingshotBand();
+        }
 
         if (!this.ended) {
             var self =  this;
@@ -410,6 +414,46 @@ $(window).load(function() {
             }
         };
     };
+
+    Level.prototype.drawSlingshotBand = function() {
+        this.game.context.strokeStyle = "rgb(68,31,11)"; // Darker brown color
+        this.game.context.lineWidth = 6; // Draw a thick line
+
+        // Use angle hero has been dragged and radius to calculate coordinates of edge of hero wrt. hero center
+        var radius = this.currentHero.GetUserData().shape.radius;
+        var heroX = this.currentHero.GetPosition().x*this.engine.scale;
+        var heroY = this.currentHero.GetPosition().y*this.engine.scale;           
+        var angle = Math.atan2(this.slingshotY + 25 - heroY, this.slingshotX + 50 - heroX);  
+    
+        var heroFarEdgeX = heroX - radius * Math.cos(angle);
+        var heroFarEdgeY = heroY - radius * Math.sin(angle);
+        
+        var position = this.currentHero.GetPosition();
+        var angle = this.currentHero.GetAngle();
+    
+        this.game.context.beginPath();
+        // Start line from top of slingshot (the back side)
+        this.game.context.moveTo(this.slingshotX + 50 - this.offsetLeft, this.slingshotY + 25);    
+
+        // Draw line to center of hero
+        this.game.context.lineTo(heroX - this.offsetLeft, heroY);
+        this.game.context.stroke();      
+    
+        // Draw the hero on the back band
+        this.game.context.translate(position.x*this.engine.scale-this.offsetLeft, position.y*this.engine.scale);
+        this.game.context.rotate(angle);
+        this.currentHero.GetUserData().draw(this.game.context);
+        this.game.context.rotate(-angle);
+        this.game.context.translate(-position.x*this.engine.scale+this.offsetLeft, -position.y*this.engine.scale);
+            
+        this.game.context.beginPath();       
+        // Move to edge of hero farthest from slingshot top
+        this.game.context.moveTo(heroFarEdgeX - this.offsetLeft,heroFarEdgeY);
+    
+        // Draw line back to top of slingshot (the front side)
+        this.game.context.lineTo(this.slingshotX - this.offsetLeft + 10, this.slingshotY + 30);
+        this.game.context.stroke();
+    }
 
     // This method calculate the distance between the current hero center
     // and the mouse location and compares it with the radius of the current hero
