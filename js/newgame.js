@@ -140,6 +140,15 @@ $(window).load(function() {
                 if (entity2.health){
                     entity2.health -= impulseAlongNormal;
                 }
+
+                // If objects have a bounce sound, play them                
+                if (entity1.sound){
+                    entity1.sound.play();
+                }
+
+                if (entity2.sound){
+                    entity2.sound.play();
+                }
             } 
         };
         this.world.SetContactListener(listener);
@@ -222,11 +231,8 @@ $(window).load(function() {
         this.animationFrame; // Will be initialize in start() method
 
         this.currentHero;
-        /*this.background; // Will be initialize in load method
-        this.foreground; // Will be initialize in load method
-        this.slingshotImage; // Will be initialize in load method
-        this.slingshotFrontImage; // Will be initialize in load method*/
-       
+        this.slingshotReleasedSound;
+        this.backgroundMusic;
     };
 
     Level.prototype.init = function() {
@@ -257,16 +263,24 @@ $(window).load(function() {
         for (var i = 0; i < graphicsLength; i++) {
             switch(graphics[i].type) {
                 case "slingshot":
-                    var newGraphic = new Slingshot(graphics[i].url, graphics[i].position);
+                    var newGraphic = new Slingshot(graphics[i].url, graphics[i].position, graphics[i].soundUrl);
                     this.startX = newGraphic.position.x;
                     this.slingshotX = this.startX;
                     this.slingshotY = newGraphic.position.y;
+                    if (newGraphic.soundUrl) {
+                        newGraphic.sound = this.loader.loadSound(newGraphic.soundUrl);
+                        this.slingshotReleasedSound = newGraphic.sound;
+                    }
                     break;
                 case "foreground":
                     var newGraphic = new Foreground(graphics[i].url);
                     break;
                 case "background":
-                    var newGraphic = new Background(graphics[i].url, graphics[i].parallax);
+                    var newGraphic = new Background(graphics[i].url, graphics[i].parallax, graphics[i].soundUrl);
+                    if (newGraphic.soundUrl) {
+                        newGraphic.sound = this.loader.loadSound(newGraphic.soundUrl);
+                        this.backgroundMusic = newGraphic.sound;
+                    }
                     break;
                 default:
                     console.log("Undefined graphic type",graphics[i].type);
@@ -297,16 +311,16 @@ $(window).load(function() {
         // create the corresponding object
         switch(entity.type){
             case "ground":
-                var newEntity = new Ground(definition, entity.shape, entity.position, entity.url);              
+                var newEntity = new Ground(definition, entity.shape, entity.position, entity.url);
                 break;  
             case "block":
-                var newEntity = new Block(definition, entity.shape, entity.position,entity.url, entity.fullHealth);        
+                var newEntity = new Block(definition, entity.shape, entity.position,entity.url, entity.fullHealth, entity.soundUrl);     
                 break;
             case "hero":
-                var newEntity = new Hero(definition, entity.shape, entity.position, entity.url);
+                var newEntity = new Hero(definition, entity.shape, entity.position, entity.url, entity.soundUrl);
                 break;
             case "villain": // can be circles or rectangles
-                var newEntity = new Villain(definition, entity.shape, entity.position, entity.url, entity.fullHealth, entity.calories);
+                var newEntity = new Villain(definition, entity.shape, entity.position, entity.url, entity.fullHealth, entity.calories, entity.soundUrl);
                 break;                          
             default:
                 console.log("Undefined entity type",entity.type);
@@ -316,8 +330,11 @@ $(window).load(function() {
         this.engine.createEntity(newEntity);
         // Load the image if necessary
         if (newEntity.url) {
-                    newEntity.sprite = this.loader.loadImage(newEntity.url);
-                }
+            newEntity.sprite = this.loader.loadImage(newEntity.url);
+        }
+        if (newEntity.soundUrl) {
+            newEntity.sound = this.loader.loadSound(newEntity.soundUrl);
+        }
     };
 
     Level.prototype.InitHeroesAndVillains = function() {
@@ -340,6 +357,10 @@ $(window).load(function() {
         $('#gamecanvas').show();
         $('#scorescreen').show();
 
+        this.startBackgroundMusic();
+        this.musicListener();
+        this.prevListener();
+        
         var self =  this;
         this.animationFrame = window.requestAnimationFrame(function() {
                                                                 self.animate();
@@ -400,6 +421,9 @@ $(window).load(function() {
                         this.score += entity.calories;
                         $('#score').html('Score: '+this.score);
                         this.villains.pop();
+                    }
+                    if (entity.sound){
+                        entity.sound.play();
                     }
                 } else {
                     // Translate and rotate the canvas context to the position and angle of the entity
@@ -550,6 +574,7 @@ $(window).load(function() {
                 this.currentHero.SetPosition({x:(this.mouse.x+this.offsetLeft)/this.engine.scale,y:this.mouse.y/this.engine.scale});
             } else {
                 this.mode = "fired";
+                this.slingshotReleasedSound.play();
                 var impulseScaleFactor = 0.75;
                 // Coordinates of center of slingshot (where the band is tied to slingshot)
                 var slingshotCenterX = this.slingshotX + 35;
@@ -578,6 +603,7 @@ $(window).load(function() {
         if(this.mode === "level-success" || this.mode === "level-failure"){       
             if(this.panTo(0)){
                 this.ended = true;
+                this.stopBackgroundMusic();
                 this.showEndingScreen();
             }            
         }
@@ -614,7 +640,40 @@ $(window).load(function() {
         this.lastUpdateTime = undefined;
         this.currentLevel = new Level(number, this.game);
         this.currentLevel.init();
-        //this.load(number);
+    };
+
+    Level.prototype.musicListener = function() {
+        var self = this;
+        $("#togglemusic").on("click", function() {
+            var toggleImage = $("#togglemusic")[0];
+            if (self.backgroundMusic.paused) {
+                self.backgroundMusic.play();
+                toggleImage.src="images/icons/sound.png";
+            } else {
+                self.backgroundMusic.pause();   
+                $("#togglemusic")[0].src="images/icons/nosound.png";
+            }
+        });
+    };
+
+    Level.prototype.prevListener = function() {
+        var self = this;
+        $("#prev").on("click", function() {
+            self.startLevel(self.number);
+        });
+    };
+
+    Level.prototype.startBackgroundMusic = function() {
+        var toggleImage = $("#togglemusic")[0]; 
+        this.backgroundMusic.play();
+        toggleImage.src="images/icons/sound.png";
+    };
+
+    Level.prototype.stopBackgroundMusic = function() {
+        var toggleImage = $("#togglemusic")[0]; 
+        toggleImage.src="images/icons/nosound.png";
+        this.backgroundMusic.pause();
+        this.backgroundMusic.currentTime = 0; // Go to the beginning of the song
     };
 
     // Loader Class
@@ -649,17 +708,19 @@ $(window).load(function() {
 
     Loader.prototype.countAssets = function() {
         var level = this.level.assets;
-        // count the number of graphics to load
+        // count the number of graphics images and sounds to load
         var graphicsArray = level.graphics;
         var graphicsArrayLength = graphicsArray.length;
         for (var i = 0; i < graphicsArrayLength; i++) {
             if(graphicsArray[i].url != undefined) { this.totalCount++; }
+            if(graphicsArray[i].sound != undefined) {this.totalCount++; }
         };
-        // count the number of entities to load
+        // count the number of Entities images and sounds to load
         var entityArray = level.entities;
         var entityArrayLength = entityArray.length;
         for (var i = 0; i < entityArrayLength; i++) {
             if(entityArray[i].url != undefined) { this.totalCount++; }
+            if(entityArray[i].sound != undefined) { this.totalCount++; }
         };
     };
 
@@ -677,7 +738,7 @@ $(window).load(function() {
         $("loadingscreen").show();
         var audio = new Audio();
         audio.src = url + this.soundFileExtn;
-        audio.addEventListener("canplaythrough", this.itemLoaded.bind(this), false);
+        audio.addEventListener("canplaythrough", this.itemloaded.bind(this), false);
         return audio;
     };
 
@@ -747,9 +808,10 @@ $(window).load(function() {
     Graphic.prototype.draw = function(context) {
     };
 
-    var Slingshot = function(url, position) {
+    var Slingshot = function(url, position, soundUrl) {
         Graphic.call(this, url);
         this.position = position;
+        this.soundUrl = soundUrl || undefined;
         this.displayOrder = 3;
         this.type = "Slingshot";
     };
@@ -772,9 +834,10 @@ $(window).load(function() {
         context.drawImage(this.sprite, offsetLeft, 0, 640, 480, 0, 0, 640, 480);
     };
 
-    var Background = function(url, parallax) {
+    var Background = function(url, parallax, soundUrl) {
         Graphic.call(this, url);
         this.parallax = parallax;
+        this.soundUrl = soundUrl;
         this.displayOrder = 1;
         this.type = "Background";
     };
@@ -826,9 +889,10 @@ $(window).load(function() {
     };
 
     // Block Class --> Subclass of Entity
-    var Block = function(definition, shape, position, url, fullHealth) {
+    var Block = function(definition, shape, position, url, fullHealth, soundUrl) {
         Entity.call(this, definition, shape, position, url);
         this.fullHealth = fullHealth;
+        this.soundUrl = soundUrl;
         this.type = "Block";
     };
     Block.prototype = Object.create(Entity.prototype);
@@ -839,8 +903,9 @@ $(window).load(function() {
     };
 
     // Hero Class --> Subclass of Entity
-    var Hero = function(definition, shape, position, url) {
+    var Hero = function(definition, shape, position, url, soundUrl) {
         Entity.call(this, definition, shape, position, url);
+        this.soundUrl = soundUrl;
         this.type = "Hero";
     };
     Hero.prototype = Object.create(Entity.prototype);
@@ -851,10 +916,11 @@ $(window).load(function() {
     };
 
     // Villains Class --> Subclass of Entity
-    var Villain = function(definition, shape, position, url, fullHealth, calories) {
+    var Villain = function(definition, shape, position, url, fullHealth, calories, soundUrl) {
         Entity.call(this, definition, shape, position, url);
         this.health = fullHealth;
         this.calories = calories;
+        this.soundUrl = soundUrl;
         this.type = "Villain";
     };
     Villain.prototype = Object.create(Entity.prototype);

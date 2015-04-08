@@ -9,7 +9,8 @@
 								"x":140,
 								"y":280
 							},
-							"url": "images/slingshot.png"
+							"url": "images/slingshot.png",
+							"soundUrl": "audio/released"
 						},
 						{
 							"type": "slingshot", 
@@ -27,7 +28,8 @@
 						{
 							"type": "background", 
 							"parallax":4,
-							"url": "images/backgrounds/clouds-background.png"
+							"url": "images/backgrounds/clouds-background.png",
+							"soundUrl": "audio/gurdonark-kindergarten"
 						}
 				],
 				"entities": [
@@ -95,6 +97,7 @@
 							"y":380
 						},
 						"url":"images/entities/wood.png",
+						"soundUrl": "audio/woodbreak",
 						"fullHealth":500
 					},
 					{
@@ -119,6 +122,7 @@
 							"y":280
 						},
 						"url": "images/entities/glass.png",
+						"soundUrl": "audio/glassbreak",
 						"fullHealth":100
 					},
 					{
@@ -143,6 +147,7 @@
 							"y":380
 						},
 						"url":"images/entities/wood.png",
+						"soundUrl": "audio/woodbreak",
 						"fullHealth":500
 					},
 					{
@@ -167,6 +172,7 @@
 							"y":280
 						},
 						"url": "images/entities/glass.png",
+						"soundUrl": "audio/glassbreak",
 						"fullHealth":100
 					},
 					{
@@ -189,6 +195,7 @@
 							"y":205
 						},
 						"url": "images/entities/burger.png",
+						"soundUrl": "audio/bounce",
 						"fullHealth":40,
 						"calories":590
 					},
@@ -213,6 +220,7 @@
 							"y":205
 						},
 						"url": "images/entities/fries.png",
+						"soundUrl": "audio/bounce",
 						"fullHealth":50,
 						"calories":420
 					},
@@ -235,7 +243,8 @@
 							"x":80,
 							"y":405
 						},
-						"url": "images/entities/orange.png"
+						"url": "images/entities/orange.png",
+						"soundUrl": "audio/bounce"
 					},
 					{
 						"type": "hero",
@@ -256,7 +265,8 @@
 							"x":140,
 							"y":405
 						},
-						"url": "images/entities/apple.png"
+						"url": "images/entities/apple.png",
+						"soundUrl": "audio/bounce"
 					}
 				]
 			},
